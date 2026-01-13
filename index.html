@@ -1,0 +1,908 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"><title>Grid Forge Beta by Note media</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+<script>
+tailwind.config={darkMode:'class',theme:{extend:{fontFamily:{sans:['Inter','system-ui','sans-serif'],mono:['"JetBrains Mono"','"Courier New"','Courier','monospace']},colors:{paper:'var(--c-paper)',canvas:'var(--c-canvas)',ink:'var(--c-ink)',graphite:'var(--c-graphite)',line:'var(--c-line)',highlight:'var(--c-highlight)'}}}};
+</script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--c-paper:#ffffff;--c-canvas:#e5e5e5;--c-ink:#111827;--c-graphite:#4b5563;--c-line:#e5e7eb;--c-highlight:#f3f4f6}
+html.dark{--c-paper:#1f2937;--c-canvas:#111827;--c-ink:#f9fafb;--c-graphite:#9ca3af;--c-line:#374151;--c-highlight:#374151}
+body{background-color:var(--c-canvas);color:var(--c-ink);font-family:'Inter',sans-serif;overflow:hidden;transition:background-color .2s,color .2s;user-select:none;-webkit-user-select:none}
+::-webkit-scrollbar{width:6px;height:6px}::-webkit-scrollbar-track{background:0 0}::-webkit-scrollbar-thumb{background:#d1d5db;border-radius:3px}html.dark ::-webkit-scrollbar-thumb{background:#4b5563}::-webkit-scrollbar-thumb:hover{background:#9ca3af}
+input[type=number],select,.custom-input,input[type=text],input[type=password],textarea{background-color:var(--c-paper);border:1px solid var(--c-line);color:var(--c-ink);border-radius:0;transition:all .2s;font-family:'JetBrains Mono',monospace;user-select:text;-webkit-user-select:text}
+input:focus,select:focus,textarea:focus{outline:0;border-color:#6b7280}
+.btn-primary{background-color:var(--c-ink);color:var(--c-paper);border-radius:0;transition:all .2s}.btn-secondary{background-color:var(--c-paper);color:var(--c-ink);border:1px solid var(--c-line);border-radius:0;transition:all .2s}.btn-secondary:hover{background-color:var(--c-highlight)}
+.btn-ai{background-color:#111827;color:#fff;border-radius:0;transition:all .2s}html.dark .btn-ai{background-color:#374151;border:1px solid #4b5563}.btn-ai:hover{background-color:#374151;box-shadow:0 4px 12px #00000026}.btn-ai:disabled{background-color:#9ca3af;cursor:not-allowed;box-shadow:none}
+.sheet-tab{border-bottom:2px solid transparent;color:var(--c-graphite);transition:all .2s;background-color:transparent}.sheet-tab:hover{background-color:var(--c-highlight);color:var(--c-ink)}.sheet-tab.active{border-bottom-color:var(--c-ink);color:var(--c-ink);background-color:var(--c-line)}
+.btn-level{font-size:9px;font-weight:600;padding:2px 0;border:1px solid var(--c-line);background:var(--c-paper);color:var(--c-graphite);transition:all .15s;pointer-events:auto}.btn-level:hover{background:var(--c-highlight)}.btn-level.active{color:#fff;border-color:transparent}
+.btn-level[data-val=S_HERO].active{background:#000}html.dark .btn-level[data-val=S_HERO].active{background:#fff;color:#000}.btn-level[data-val=S1].active{background:#4b5563}.btn-level[data-val=S2].active{background:#9ca3af}.btn-level[data-val=S_DETAIL].active{background:#d1d5db;color:#374151}.btn-level[data-is-blank-toggle=true].active{background:var(--c-highlight);color:#9ca3af;border-color:var(--c-line);box-shadow:inset 0 2px 4px #0000000d}
+.grid-cell{cursor:grab;user-select:none;background-color:#fff;overflow:hidden;transform:translateZ(0)}.grid-cell:active{cursor:grabbing}.grid-cell.dragging{opacity:.25}.grid-cell.drag-over{box-shadow:inset 0 0 0 3px #000!important;background-color:#00000008;z-index:1;border:none!important}
+.grid-cell.is-blank{background-color:#fff;box-shadow:none;border:none}.grid-cell.is-blank:hover{box-shadow:inset 0 0 0 1px #f3f4f6}
+@keyframes cellFadeIn{0%{opacity:0}100%{opacity:1}}.cell-enter-anim{animation:cellFadeIn var(--enter-duration,.15s) ease-out forwards;transform-origin:center center}::view-transition-group(*){animation-duration:.2s;animation-timing-function:ease-out}
+.grid-cell.hover-active-mock .mock-fill{background-color:#d1d5db!important;border-color:#9ca3af!important;color:#374151!important}.grid-cell.hover-active-mock{z-index:40}.grid-cell.hover-active-img{transform:translateY(-2px) scale(1.03);box-shadow:0 25px 30px -10px #00000040,0 10px 10px -5px #0000001a;z-index:50;border:1px solid #000;overflow:visible;transition:transform .2s,box-shadow .2s}.img-row.highlight-from-grid{background-color:var(--c-highlight)!important;border-left-color:var(--c-ink)!important}
+.dot-bg{background-image:radial-gradient(#d1d5db 1px,transparent 1px);background-size:20px 20px}html.dark .dot-bg{background-image:radial-gradient(#374151 1px,transparent 1px)}
+.swiss-text{font-family:'Inter',sans-serif;font-weight:500;letter-spacing:.02em;font-kerning:none;text-rendering:geometricPrecision}#heroReverseBtn.active{background-color:var(--c-ink);color:var(--c-paper);border-color:var(--c-ink)}
+#imageList{content-visibility:auto;contain-intrinsic-size:100px 500px}
+#viewport-wrapper{perspective:1500px;position:relative;overflow:hidden}#gridOuter{position:relative;transform-origin:center center;transition:transform .1s linear,opacity .4s ease;will-change:transform,opacity;z-index:10;background:#fff;box-shadow:0 20px 60px -20px #00000026}#gridOuter.view-inactive{opacity:0;pointer-events:none;transform:translate3d(0,0,-400px) scale(.8)}
+#overviewStage{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;perspective:1500px;z-index:20;transition:opacity .5s ease}#overviewStage.view-active{opacity:1;pointer-events:auto}
+.scene-camera{position:relative;width:0;height:0;transform-style:preserve-3d;transition:transform .85s cubic-bezier(.19,1,.22,1);will-change:transform}
+.sheet-card-3d{position:absolute;background:#fff;border-radius:0;box-shadow:1px 1px 0 #0000000d,0 20px 50px #00000033;transform-style:preserve-3d;cursor:pointer;width:280px;height:396px;left:-140px;top:-198px;backface-visibility:hidden;transition:transform .4s cubic-bezier(.34,1.56,.64,1),box-shadow .4s ease,border-color .2s;border:1px solid transparent}
+.scene-camera:not(.zooming) .sheet-card-3d:hover{transform:translateZ(40px) scale(1.05);box-shadow:0 40px 80px #0000004d;border:2px solid #000;z-index:100}.scene-camera:not(.zooming):hover .sheet-card-3d:not(:hover){opacity:.6}
+.mini-meta{position:absolute;font-size:6px;color:#4b5563;font-family:'Inter',sans-serif;line-height:1;pointer-events:none}.sheet-label-3d{position:absolute;bottom:-35px;left:50%;transform:translateX(-50%);font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:#111827;background:#fff;padding:4px 10px;border:1px solid #e5e7eb;box-shadow:0 2px 10px #0000000d;border-radius:0}
+#toggle3dBtn.active{background-color:var(--c-ink);color:var(--c-paper);border-color:var(--c-ink)}.mini-cell{background-color:#f3f4f6;border:.5px solid #0000000d;position:relative;overflow:hidden}.mini-cell.filled{background-color:#e5e7eb;background-size:cover;background-position:center}.mini-cell.is-blank{background-color:#fff;border:none}
+.template-card{transition:all .2s ease}.template-card:hover{transform:translateY(-2px);border-color:var(--c-ink);box-shadow:0 4px 12px #0000001a}.mini-layout-preview{display:grid;width:100%;height:100%;background:#fff;border:1px solid #eee;overflow:hidden}.mini-layout-cell{background:#f3f4f6;border:1px solid #fff}.mini-layout-cell.hero{background:#d1d5db}
+.loader-overlay{position:fixed;inset:0;background:#000000d9;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;font-family:'JetBrains Mono',monospace;opacity:0;pointer-events:none;transition:opacity .3s}.loader-overlay.active{opacity:1;pointer-events:auto}
+.loader-spinner{width:48px;height:48px;border:4px solid #fff;border-bottom-color:transparent;border-radius:50%;display:inline-block;box-sizing:border-box;animation:rotation 1s linear infinite;mb-4}@keyframes rotation{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}.compact-input{height:24px;font-size:10px}
+#gridGuideOverlay { position: absolute; inset: 0; pointer-events: none; z-index: 50; }
+html.dark #gridGuideOverlay { mix-blend-mode: screen; }
+#toggleGuidesBtn.active { background-color: var(--c-ink); color: var(--c-paper); border-color: var(--c-ink); }
+/* AutoSave Status Styles */
+.autosave-status { font-size: 8px; font-weight: bold; text-transform: uppercase; display: flex; align-items: center; gap: 4px; padding: 2px 6px; border-radius: 4px; transition: all 0.3s; }
+.status-saved { color: #10b981; background: #d1fae5; }
+.status-saving { color: #f59e0b; background: #fef3c7; }
+.status-error { color: #ef4444; background: #fee2e2; }
+html.dark .status-saved { background: #064e3b; color: #6ee7b7; }
+html.dark .status-saving { background: #78350f; color: #fcd34d; }
+html.dark .status-error { background: #7f1d1d; color: #fca5a5; }
+</style>
+</head>
+<body class="bg-canvas text-ink antialiased h-screen overflow-hidden flex flex-col">
+  <div id="loadingOverlay" class="loader-overlay"><span class="loader-spinner mb-4"></span><h2 class="text-lg font-bold uppercase tracking-widest mb-1">Processing...</h2><p class="text-xs text-gray-400" id="loadingMsg">Please wait...</p></div>
+  <div class="flex-1 grid grid-cols-1 md:grid-cols-[260px,1fr] lg:grid-cols-[260px,320px,1fr] overflow-hidden h-full">
+    <aside class="border-r border-line bg-paper flex flex-col h-full overflow-hidden z-20 shadow-[4px_0_12px_rgba(0,0,0,0.05)]">
+      <div class="p-3 border-b border-line bg-paper shrink-0 space-y-3">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-2"><div class="w-7 h-7 bg-ink text-paper flex items-center justify-center font-bold text-[10px] rounded shadow-sm">GF</div><div class="flex flex-col"><span class="text-[9px] font-bold text-graphite font-mono tracking-widest">PRO</span><span class="text-[8px] text-gray-400">v4.9.3</span></div></div>
+            <div class="flex items-center space-x-1">
+                <button id="themeToggleBtn" class="w-6 h-6 flex items-center justify-center hover:bg-highlight rounded-full transition text-[10px]" title="Toggle Dark Mode">◑</button>
+                <div class="w-px h-3 bg-line mx-1"></div>
+                <button id="btnHelp" class="w-6 h-6 flex items-center justify-center hover:bg-highlight rounded-full transition border border-line text-[10px] font-bold" title="Help">?</button>
+                <button id="undoBtn" class="w-6 h-6 flex items-center justify-center hover:bg-highlight rounded disabled:opacity-30 transition" title="Undo" disabled><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg></button>
+                <button id="redoBtn" class="w-6 h-6 flex items-center justify-center hover:bg-highlight rounded disabled:opacity-30 transition" title="Redo" disabled><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3L21 13"/></svg></button>
+            </div>
+        </div>
+        <!-- AutoSave Status UI -->
+        <div class="flex justify-between items-center bg-highlight px-2 py-1 rounded border border-line">
+           <div id="autoSaveStatus" class="autosave-status status-saved"><span class="text-[10px]">☁</span> Saved</div>
+        </div>
+        <div class="grid grid-cols-3 gap-1">
+             <button id="btnSaveProject" class="flex flex-col items-center justify-center p-1.5 border border-line bg-paper hover:bg-highlight transition"><span class="text-[10px]">💾</span><span class="text-[7px] font-bold uppercase mt-0.5">Save</span></button>
+             <button id="btnLoadProject" class="flex flex-col items-center justify-center p-1.5 border border-line bg-paper hover:bg-highlight transition relative"><span class="text-[10px]">📂</span><span class="text-[7px] font-bold uppercase mt-0.5">Load</span><input type="file" id="loadProjectInput" accept=".gforge" class="absolute inset-0 opacity-0 cursor-pointer"></button>
+             <button id="toggle3dBtn" class="flex flex-col items-center justify-center p-1.5 border border-line bg-paper hover:bg-highlight transition"><span class="text-[10px]">❒</span><span class="text-[7px] font-bold uppercase mt-0.5">View</span></button>
+        </div>
+      </div>
+      <div class="flex border-b border-line bg-highlight shrink-0">
+        <button class="sheet-tab flex-1 py-1.5 text-[9px] font-bold uppercase tracking-wider active" data-idx="0">S-1</button><button class="sheet-tab flex-1 py-1.5 text-[9px] font-bold uppercase tracking-wider" data-idx="1">S-2</button><button class="sheet-tab flex-1 py-1.5 text-[9px] font-bold uppercase tracking-wider" data-idx="2">S-3</button><button class="sheet-tab flex-1 py-1.5 text-[9px] font-bold uppercase tracking-wider" data-idx="3">S-4</button>
+      </div>
+      <div class="p-3 border-b border-line bg-paper shrink-0 space-y-3 z-30">
+        <div class="grid grid-cols-2 gap-2">
+            <div><label class="block text-[8px] font-medium text-graphite mb-1 uppercase text-center">Cols</label><input id="colsInput" type="number" min="1" max="24" value="8" class="w-full text-base font-bold text-center h-8 px-1 py-1 input-history cursor-ns-resize"></div>
+            <div><label class="block text-[8px] font-medium text-graphite mb-1 uppercase text-center">Rows</label><input id="rowsInput" type="number" min="1" max="24" value="5" class="w-full text-base font-bold text-center h-8 px-1 py-1 input-history cursor-ns-resize"></div>
+        </div>
+        <div>
+            <label class="block text-[8px] font-medium text-graphite mb-1 uppercase text-center">Partition Logic</label>
+            <div class="flex gap-0 border border-line"><button id="btnAlgoV5" class="flex-1 py-1 text-[9px] font-bold uppercase bg-ink text-paper hover:opacity-90 transition" data-mode="v5">Priority</button><button id="btnAlgoV4" class="flex-1 py-1 text-[9px] font-bold uppercase bg-paper text-graphite hover:bg-highlight transition" data-mode="v4">Recursive</button></div>
+            <input type="hidden" id="algoInput" value="v5" class="input-history">
+        </div>
+        <div>
+            <label class="block text-[9px] font-bold uppercase tracking-wider text-graphite mb-2">Typography</label>
+            <div class="grid grid-cols-2 gap-2">
+               <div><label class="block text-[8px] font-medium text-graphite mb-1 uppercase text-center">Size</label><input id="fontSizeInput" type="number" min="1" max="100" step="0.5" value="4" class="w-full text-sm font-bold text-center h-7 px-1 py-1 input-history cursor-ns-resize"></div>
+               <div><label class="block text-[8px] font-medium text-graphite mb-1 uppercase text-center">Leading</label><input id="lineHeightInput" type="number" min="1" max="100" step="0.5" value="5" class="w-full text-sm font-bold text-center h-7 px-1 py-1 input-history cursor-ns-resize"></div>
+            </div>
+        </div>
+      </div>
+      <div class="flex-1 overflow-y-scroll min-h-0 bg-highlight/30">
+        <!-- MOVED SOURCE PANEL FROM HERE -->
+        <div class="p-3 border-b border-line space-y-3 bg-paper">
+          <div class="flex items-center justify-between">
+            <h2 class="text-[9px] font-bold uppercase tracking-wider text-graphite">GLOBAL LAYOUT</h2>
+            <div class="flex space-x-2">
+                <button id="openTemplateBtn" class="text-[8px] font-bold uppercase border border-line px-1.5 py-0.5 hover:bg-highlight flex items-center gap-1"><span>❖</span> Templates</button>
+                <button id="layoutSettingsToggle" class="text-gray-400 hover:text-ink transition" title="Meta Info"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg></button>
+            </div>
+          </div>
+          <div>
+            <label class="block text-[8px] font-medium text-graphite mb-1 uppercase">Format</label>
+            <div class="flex gap-2"><select id="paperSizeSelect" class="w-full text-[10px] px-2 py-1 cursor-pointer input-history border border-line bg-paper"></select><input type="hidden" id="paperOrientationSelect" class="input-history" value="portrait"><button id="btnOrientationToggle" class="w-10 flex-shrink-0 h-[26px] border border-line bg-paper hover:bg-highlight text-ink flex items-center justify-center transition" title="Toggle Orientation"></button></div>
+          </div>
+          <div><div class="flex justify-between mb-1"><label class="block text-[8px] font-medium text-graphite uppercase">Margin</label><span id="marginValue" class="text-[9px] font-mono text-ink">5px</span></div><input id="marginSlider" type="range" min="0" max="100" value="5" step="1" class="w-full h-1 bg-gray-200 dark:bg-gray-600 appearance-none cursor-pointer input-history"></div>
+          <div><div class="flex justify-between mb-1"><label class="block text-[8px] font-medium text-graphite uppercase">Gap</label><span id="gapValue" class="text-[9px] font-mono text-ink">4px</span></div><input id="gapSlider" type="range" min="2" max="30" value="4" step="1" class="w-full h-1 bg-gray-200 dark:bg-gray-600 appearance-none cursor-pointer input-history"></div>
+          <div id="advancedLayoutSettings" class="hidden space-y-4 pt-2 border-t border-dashed border-line">
+              <div class="space-y-2">
+                  <h2 class="text-[9px] font-bold uppercase tracking-wider text-graphite mb-2">META INFO (VECTOR)</h2>
+                  <div class="grid grid-cols-2 gap-2">
+                    <div><label class="block text-[8px] text-gray-400 mb-1">TOP LEFT</label><input id="metaTL" type="text" value="PROJECT 001" class="w-full text-[9px] px-2 py-1 border-line bg-paper input-history"></div><div><label class="block text-[8px] text-gray-400 mb-1">TOP RIGHT</label><input id="metaTR" type="text" value="2024 / V1.0" class="w-full text-[9px] px-2 py-1 border-line bg-paper input-history"></div>
+                    <div><label class="block text-[8px] text-gray-400 mb-1">BTM LEFT</label><input id="metaBL" type="text" value="ARCHITECTURAL STUDY" class="w-full text-[9px] px-2 py-1 border-line bg-paper input-history"></div><div><label class="block text-[8px] text-gray-400 mb-1">BTM RIGHT</label><input id="metaBR" type="text" value="SHEET A-101" class="w-full text-[9px] px-2 py-1 border-line bg-paper input-history"></div>
+                  </div>
+              </div>
+          </div>
+        </div>
+        <div id="heroControls" class="p-3 border-b border-line space-y-2 bg-highlight hidden">
+          <div class="flex items-center justify-between"><h3 class="text-[8px] font-bold uppercase tracking-wider text-ink flex items-center"><span class="w-1.5 h-1.5 bg-ink rounded-full mr-2"></span> HERO</h3></div>
+          <div class="grid grid-cols-[1fr,1fr] gap-2"><input type="hidden" id="heroFlowSelect" class="input-history" value="Landscape"><button id="btnHeroFlowToggle" class="w-full h-[26px] border border-line bg-paper text-ink hover:bg-highlight flex items-center justify-center transition" title="Toggle Split Direction"></button><button id="heroReverseBtn" class="w-full h-[26px] text-[10px] border border-line bg-paper text-graphite hover:bg-highlight transition uppercase font-bold flex items-center justify-center" title="Reverse Hero Position">Reverse ⇄</button></div>
+          <div><select id="heroDominanceSelect" class="w-full text-[10px] px-2 py-1 bg-paper border-line text-ink input-history"><option value="high">Dominance: High (80%)</option><option value="medium" selected>Dominance: Medium (60%)</option><option value="low">Dominance: Low (50%)</option></select></div>
+        </div>
+      </div>
+      <div class="bg-highlight border-t border-line shrink-0 mt-auto">
+        <div id="aiHeader" class="flex items-center justify-between px-3 py-3 cursor-pointer hover:bg-paper transition select-none group"><h2 class="text-[9px] font-bold uppercase tracking-wider text-ink flex items-center gap-2"><span id="aiChevron" class="transform transition-transform duration-200">▼</span><span class="flex items-center gap-1"><span class="text-sm">✦</span> AI Engine</span></h2><button id="aiSettingsToggle" class="text-[9px] text-graphite underline hover:text-ink relative z-10">Setup Key</button></div>
+        <div id="aiBody" class="px-3 pb-3 space-y-2">
+            <div id="aiSettingsPanel" class="hidden space-y-2 p-2 bg-paper border border-line mb-2 shadow-sm relative z-50">
+                <div class="provider-config"><label class="block text-[8px] font-bold text-graphite mb-1">SILICONFLOW API KEY</label><input id="aiApiKey" type="password" placeholder="sk-..." class="w-full text-[9px] px-1 py-1 border-line bg-paper focus:border-ink mb-2"><label class="block text-[8px] font-bold text-graphite mb-1">IMAGE MODEL</label><select id="aiImageModel" class="w-full text-[9px] px-1 py-1 border-line bg-highlight focus:border-ink mb-1"><option value="Kwai-Kolors/Kolors" selected>Kwai-Kolors/Kolors (Free)</option><option value="Qwen/Qwen-Image">Qwen/Qwen-Image (Paid)</option></select></div><button id="saveAiKeyBtn" class="w-full bg-highlight text-ink text-[9px] py-1 font-bold hover:bg-line mt-2">SAVE CONFIG</button>
+            </div>
+            <div class="space-y-2"><textarea id="aiPrompt" rows="3" class="w-full text-[10px] px-2 py-2 border-line bg-paper focus:border-ink resize-none text-ink" placeholder="1. Describe board layout..."></textarea><button id="btnAiGenerate" class="w-full btn-ai py-2 text-[10px] font-bold uppercase tracking-widest flex items-center justify-center gap-2"><span id="aiBtnText">Generate Layout</span></button></div><div id="aiErrorMsg" class="text-[9px] text-red-500 hidden bg-paper p-1 border border-red-200"></div>
+        </div>
+      </div>
+    </aside>
+    <section class="border-r border-line bg-paper flex flex-col h-full hidden lg:flex overflow-hidden z-20">
+      <div class="px-3 py-2 border-b border-line flex items-center justify-between bg-paper shrink-0"><div class="flex items-center space-x-2"><h2 class="text-[9px] font-bold uppercase tracking-wider text-graphite">LAYER STACK</h2><button id="diceBtn" class="text-[12px] hover:text-ink transition" title="Shuffle Images">🎲</button></div><span id="imageCount" class="text-[9px] font-mono text-graphite bg-highlight px-1.5 py-0.5">00</span></div>
+      <!-- MOVED SOURCE PANEL TO HERE -->
+      <div class="p-3 border-b border-line bg-paper shrink-0">
+          <div class="flex items-center justify-between mb-2"><h2 class="text-[9px] font-bold uppercase tracking-wider text-graphite">SOURCE</h2><span class="text-[8px] bg-highlight text-graphite px-1 rounded">SHEET <span id="currentSheetLabel">1</span>/4</span></div>
+          <div class="grid grid-cols-3 gap-2 mb-2">
+            <label class="block border border-dashed border-line bg-highlight p-1 text-center cursor-pointer hover:border-graphite hover:bg-paper transition group flex flex-col items-center justify-center h-12">
+              <span class="text-base mb-0 text-graphite group-hover:text-ink">+</span><p class="text-[8px] font-medium text-ink">File</p><input id="fileInput" type="file" accept="image/*,video/mp4" multiple class="hidden">
+            </label>
+            <button id="addMockBtn" class="block border border-dashed border-line bg-paper p-1 text-center cursor-pointer hover:border-graphite hover:bg-highlight transition group flex flex-col items-center justify-center h-12"><span class="text-base mb-0 text-gray-300 group-hover:text-graphite">■</span><p class="text-[8px] font-medium text-ink">Mock</p></button>
+            <button id="addRandomMocksBtn" class="block border border-dashed border-line bg-highlight p-1 text-center cursor-pointer hover:border-graphite hover:bg-paper transition group flex flex-col items-center justify-center h-12"><span class="text-base mb-0 text-graphite group-hover:text-ink">🎲</span><p class="text-[8px] font-medium text-ink">Rndm</p></button>
+          </div>
+          <button id="clearAllBtn" class="w-full mt-1 text-[9px] py-1 border border-line text-graphite hover:bg-highlight transition">Clear Sheet Buffer</button>
+      </div>
+      <div class="flex-1 overflow-y-scroll min-h-0 bg-highlight/50" id="imageListContainer"><div id="imageList" class="divide-y divide-line"><div class="p-8 text-center text-gray-400"><p class="text-[10px] font-mono">Drag images/video here</p></div></div></div>
+    </section>
+    <main class="bg-canvas flex flex-col h-full relative overflow-hidden z-10 transition-colors">
+      <div class="px-4 py-2 border-b border-line flex items-center justify-between shrink-0 bg-paper shadow-sm z-30 relative">
+        <div class="flex items-center space-x-2 text-[10px] font-mono text-graphite"><span class="font-bold text-ink">CANVAS PREVIEW</span><span class="text-gray-300">/</span><span id="statusText">WAITING</span></div>
+        <div class="flex items-center space-x-2">
+            <button id="toggleGuidesBtn" class="flex flex-col items-center justify-center w-8 h-8 border border-line bg-paper hover:bg-highlight text-graphite transition rounded-sm mr-2" title="Toggle Guides (Shift+G)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 3L3 21"/><path d="M3 3h18v18H3z"/><path d="M12 3v18"/><path d="M3 12h18"/></svg></button>
+            <button id="btnPng" class="btn-secondary px-3 py-1 text-[9px] font-bold uppercase tracking-wide">EXP IMG</button><button id="btnPdf" class="btn-secondary px-3 py-1 text-[9px] font-bold uppercase tracking-wide">EXP ALL PDF</button>
+        </div>
+      </div>
+      <div id="viewport-wrapper" class="flex-1 flex justify-center items-center p-8 relative z-0 dot-bg">
+        <div id="gridOuter" class="relative bg-white shadow-2xl shadow-gray-400/20" style="width: 0; height: 0; transform: translate(0,0) scale(1);">
+          <div id="gridCanvas" class="relative overflow-visible bg-white origin-top-left flex flex-col">
+              <div id="canvasMetaLayer" class="absolute inset-0 z-20 pointer-events-none"></div>
+              <div id="gridContentArea" class="flex-1 relative z-10"><div id="emptyState" class="absolute inset-0 flex flex-col items-center justify-center text-gray-300"><span class="text-2xl mb-2">+</span><p class="text-[9px] font-mono uppercase tracking-widest">NO DATA</p></div></div>
+              <svg id="gridGuideOverlay" class="absolute inset-0 z-50 pointer-events-none hidden" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg"></svg>
+          </div>
+        </div>
+        <div id="overviewStage"><div id="scene3d" class="scene-camera"></div></div><div id="zoomHint" class="absolute bottom-4 right-4 bg-black/70 text-white px-3 py-1.5 rounded text-[10px] font-mono pointer-events-none opacity-50 transition-opacity">Scroll: Zoom | DblClick: Reset</div>
+      </div>
+      <div class="px-4 py-2 border-t border-line bg-paper text-[9px] text-gray-400 font-mono flex justify-between shrink-0 z-30 relative"><span id="layoutInfo">Ready</span><span id="exportStatus">Ready</span></div>
+    </main>
+  </div>
+  <div id="cropModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 hidden"><div class="bg-paper p-4 w-[90vw] h-[90vh] flex flex-col relative shadow-2xl"><div class="flex-1 bg-gray-900 relative overflow-hidden flex items-center justify-center mb-4"><img id="cropImageTarget" src="" alt="Crop Target" class="max-w-full max-h-full"></div><div class="flex justify-end space-x-4 shrink-0"><button id="cancelCropBtn" class="px-4 py-2 text-xs font-bold uppercase tracking-widest border border-line text-ink hover:bg-highlight">Cancel</button><button id="saveCropBtn" class="px-6 py-2 text-xs font-bold uppercase tracking-widest bg-ink text-paper hover:opacity-90">Apply</button></div></div></div>
+  <div id="selectionModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 hidden"><div class="bg-paper p-6 w-[80vw] max-w-4xl max-h-[90vh] flex flex-col relative shadow-2xl rounded-sm"><h3 class="text-sm font-bold uppercase tracking-wider mb-4 text-ink">Select an Image</h3><div id="selectionGrid" class="flex-1 overflow-y-auto grid grid-cols-2 md:grid-cols-4 gap-4 p-2"></div><div class="flex justify-end mt-4 pt-4 border-t border-line"><button id="closeSelectionBtn" class="px-4 py-2 text-xs font-bold uppercase tracking-widest border border-line text-ink hover:bg-highlight">Cancel</button></div></div></div>
+  <div id="helpModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 hidden backdrop-blur-sm"><div class="bg-paper w-[500px] max-h-[80vh] flex flex-col shadow-2xl text-ink"><div class="p-4 border-b border-line flex justify-between items-center bg-highlight"><h3 class="text-[10px] font-bold uppercase tracking-widest">Help & Guide</h3><button id="closeHelpBtn" class="text-graphite hover:text-ink">✕</button></div><div class="flex-1 overflow-y-auto p-5 space-y-5"><div><h4 class="text-[10px] font-bold uppercase border-b border-line pb-1 mb-2 text-ink">Getting Started</h4><div class="text-[10px] text-graphite mb-1">Drag & Drop images or videos directly onto the center list area or canvas to start. Use the <b>MOCK</b> button to add empty placeholders.</div></div><div><h4 class="text-[10px] font-bold uppercase border-b border-line pb-1 mb-2 text-ink">Levels (Hierarchy)</h4><div class="text-[10px] text-graphite space-y-1"><p><span class="bg-highlight px-1 border border-line rounded">H</span> <b>Hero:</b> The dominant focal point.</p><p><span class="bg-highlight px-1 border border-line rounded">1</span> <b>Standard:</b> Default grid cell size.</p><p><span class="bg-highlight px-1 border border-line rounded">2</span> <b>Secondary:</b> Smaller supporting images.</p><p><span class="bg-highlight px-1 border border-line rounded">D</span> <b>Detail:</b> Smallest filler images.</p></div></div><div><h4 class="text-[10px] font-bold uppercase border-b border-line pb-1 mb-2 text-ink">Auto-Save</h4><div class="text-[10px] text-graphite space-y-1"><p>Your project is automatically saved to your browser's local database. Closing the tab will not lose data.</p></div></div><div><h4 class="text-[10px] font-bold uppercase border-b border-line pb-1 mb-2 text-ink">Shortcuts</h4><div class="text-[10px] text-graphite space-y-1"><p><b>Ctrl+Z / Ctrl+Y:</b> Undo / Redo</p><p><b>O:</b> Toggle 3D Overview Mode</p><p><b>Shift+G:</b> Toggle Grid Guides</p><p><b>Dbl Click Canvas:</b> Select/Replace Image</p></div></div></div></div></div>
+  <div id="templateModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 hidden backdrop-blur-sm"><div class="bg-paper w-[600px] max-h-[85vh] flex flex-col shadow-2xl text-ink"><div class="p-4 border-b border-line flex justify-between items-center bg-highlight"><h3 class="text-[10px] font-bold uppercase tracking-widest">Template Gallery</h3><button id="closeTemplateBtn" class="text-graphite hover:text-ink">✕</button></div><div class="p-4 bg-paper border-b border-line flex items-center gap-2"><input type="text" id="newTemplateName" placeholder="My New Layout Name..." class="flex-1 text-[10px] border border-line bg-paper p-2 text-ink"><button id="saveCurrentTemplateBtn" class="text-[10px] font-bold bg-ink text-paper px-3 py-2 uppercase hover:opacity-90">Save Current</button></div><div class="flex-1 overflow-y-auto p-4 space-y-6"><div><h4 class="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-3">My Templates</h4><div id="customTemplateGrid" class="grid grid-cols-3 gap-4"></div></div><div><h4 class="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-3">Presets</h4><div id="templateGrid" class="grid grid-cols-3 gap-4"></div></div></div></div></div>
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const ImageUtils = {
+        createThumbnail: async (blob, maxWidth = 1280, quality = 0.8) => {
+            return new Promise((resolve) => {
+                if (blob.type.startsWith('video/')) { resolve(blob); return; }
+                const img = new Image(); const url = URL.createObjectURL(blob); img.src = url;
+                img.onload = () => { URL.revokeObjectURL(url); if (img.width <= maxWidth) { resolve(blob); return; }
+                    const canvas = document.createElement('canvas'); let w = img.width, h = img.height; const scale = maxWidth / w;
+                    w = maxWidth; h = Math.round(h * scale); canvas.width = w; canvas.height = h;
+                    const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, w, h); canvas.toBlob((b) => resolve(b), 'image/jpeg', quality);
+                }; img.onerror = () => resolve(blob);
+            });
+        }
+    };
+    // --- IndexedDB Local Storage Wrapper (Versioned for v4.9) ---
+    const LocalDB = {
+        dbName: 'GridForgeDB',
+        storeName: 'projects',
+        key: 'current_project_v4_9', 
+        db: null,
+        
+        async init() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open(this.dbName, 1);
+                request.onerror = (event) => reject("DB Error");
+                request.onupgradeneeded = (event) => {
+                    const db = event.target.result;
+                    if (!db.objectStoreNames.contains(this.storeName)) {
+                        db.createObjectStore(this.storeName);
+                    }
+                };
+                request.onsuccess = (event) => {
+                    this.db = event.target.result;
+                    resolve(this.db);
+                };
+            });
+        },
+        async save(data) {
+            if (!this.db) await this.init();
+            return new Promise((resolve, reject) => {
+                const tx = this.db.transaction([this.storeName], 'readwrite');
+                const store = tx.objectStore(this.storeName);
+                const req = store.put(data, this.key);
+                req.onsuccess = () => resolve(true);
+                req.onerror = () => reject("Save Failed");
+            });
+        },
+        async load() {
+            if (!this.db) await this.init();
+            return new Promise((resolve, reject) => {
+                const tx = this.db.transaction([this.storeName], 'readonly');
+                const store = tx.objectStore(this.storeName);
+                const req = store.get(this.key);
+                req.onsuccess = (event) => resolve(event.target.result);
+                req.onerror = () => reject("Load Failed");
+            });
+        }
+    };
+    // --- AutoSave Manager (FIXED) ---
+    const AutoSaveManager = {
+        isDirty: false,
+        isSaving: false, 
+        timer: null,
+        interval: null,
+        statusEl: null,  
+        init() {
+            this.statusEl = $('autoSaveStatus');
+            this.interval = setInterval(() => { 
+                if (this.isDirty && !this.isSaving) this.saveNow(); 
+            }, 30000);
+            
+            window.addEventListener('beforeunload', (e) => {
+                if (this.isDirty) {
+                    e.preventDefault();
+                    e.returnValue = 'You have unsaved changes.';
+                    return 'You have unsaved changes.';
+                }
+            });
+        },
+        markDirty() {
+            this.isDirty = true;
+            this.updateUI('saving');
+            clearTimeout(this.timer);
+            this.timer = setTimeout(() => this.saveNow(), 2000);
+        },
+        async saveNow() {
+            if (this.isSaving || !this.isDirty) return;
+            this.isSaving = true;
+            this.isDirty = false;
+            const runSaveLogic = async () => {
+                try {
+                    const projectData = await ProjectManager.prepareForAutoSave();
+                    await LocalDB.save(projectData);
+                    if (!this.isDirty) {
+                        this.updateUI('saved');
+                    }
+                } catch (e) {
+                    console.error("AutoSave Failed:", e);
+                    this.updateUI('error');
+                    this.isDirty = true;
+                } finally {
+                    this.isSaving = false;
+                    
+                    if (this.isDirty) {
+                        clearTimeout(this.timer);
+                        this.timer = setTimeout(() => this.saveNow(), 2000);
+                    }
+                }
+            };
+            if (window.requestIdleCallback) {
+                window.requestIdleCallback(runSaveLogic, { timeout: 2000 });
+            } else {
+                setTimeout(runSaveLogic, 50);
+            }
+        },
+        updateUI(status) {
+            if (!this.statusEl) return;
+            if (status === 'saving') {
+                this.statusEl.className = 'autosave-status status-saving';
+                this.statusEl.innerHTML = '<span class="loader-spinner !w-3 !h-3 !border-2"></span> Saving...';
+            } else if (status === 'saved') {
+                this.statusEl.className = 'autosave-status status-saved';
+                this.statusEl.innerHTML = '<span class="text-[10px]">☁</span> Saved';
+            } else {
+                this.statusEl.className = 'autosave-status status-error';
+                this.statusEl.innerHTML = '⚠ Save Failed';
+            }
+        }
+    };
+    const ThemeManager = {
+        init() {
+            const btn = $('themeToggleBtn'); const stored = localStorage.getItem('gf_theme');
+            if (stored === 'dark' || (!stored && window.matchMedia('(prefers-color-scheme: dark)').matches)) document.documentElement.classList.add('dark');
+            btn.addEventListener('click', () => { 
+                document.documentElement.classList.toggle('dark'); 
+                localStorage.setItem('gf_theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light'); 
+                UIManager.fullUpdate(false); 
+            });
+        }
+    };
+    const BlobManager = {
+        registry: new Set(),
+        create(blobOrFile) { const url = URL.createObjectURL(blobOrFile); this.registry.add(url); return url; },
+        gc(activeUrlSet) { for (const url of this.registry) { if (!activeUrlSet.has(url)) { URL.revokeObjectURL(url); this.registry.delete(url); } } }
+    };
+    const AiService = {
+        config: { key: '', imageModel: 'Kwai-Kolors/Kolors' },
+        init() {
+            const stored = localStorage.getItem('gm_pro_ai_config'); if (stored) this.config = { ...this.config, ...JSON.parse(stored) }; this.loadConfigToUi();
+            if ($('saveAiKeyBtn')) $('saveAiKeyBtn').addEventListener('click', () => { this.config.key = $('aiApiKey').value.trim(); this.config.imageModel = $('aiImageModel').value; localStorage.setItem('gm_pro_ai_config', JSON.stringify(this.config)); $('aiSettingsPanel').classList.add('hidden'); alert("AI Config Saved"); });
+            if($('aiSettingsToggle')) $('aiSettingsToggle').addEventListener('click', (e) => { e.stopPropagation(); $('aiSettingsPanel').classList.toggle('hidden'); });
+        },
+        loadConfigToUi() { if($('aiApiKey')) $('aiApiKey').value = this.config.key; if ($('aiImageModel') && this.config.imageModel) $('aiImageModel').value = this.config.imageModel; },
+        async generateLayout(userPrompt) {
+             const apiKey = this.config.key; if (!apiKey) throw new Error("Please provide a SiliconFlow API Key.");
+             const systemPrompt = `You are an architectural layout assistant. Decompose the project description into image placeholders. Output JSON array: [{"level": "S_HERO"|"S1"|"S2"|"S_DETAIL", "description": "text", "count": 1}]`;
+             const response = await fetch("https://api.siliconflow.cn/v1/chat/completions", { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` }, body: JSON.stringify({ model: "Qwen/Qwen2.5-72B-Instruct", messages: [{ role: "system", content: systemPrompt }, { role: "user", content: userPrompt }], response_format: { type: "json_object" } }) });
+            if (!response.ok) throw new Error(`API Error: ${response.status}`);
+            const data = await response.json(); const text = data.choices?.[0]?.message?.content;
+            const jsonMatch = text.match(/```json\n([\s\S]*?)\n```/) || text.match(/```\n([\s\S]*?)\n```/);
+            return JSON.parse(jsonMatch ? jsonMatch[1] : text);
+        },
+        async generateImage(description) {
+            const model = this.config.imageModel || 'Kwai-Kolors/Kolors'; if (!this.config.key) throw new Error("Key Missing");
+            const resp = await fetch("https://api.siliconflow.cn/v1/images/generations", { method: "POST", headers: { "Authorization": `Bearer ${this.config.key}`, "Content-Type": "application/json" }, body: JSON.stringify({ model: model, prompt: description, image_size: "1024x1024", num_inference_steps: 20 }) });
+            if (!resp.ok) throw new Error(`Gen Error: ${await resp.text()}`);
+            const data = await resp.json(); const remoteUrls = (data.data || data.images).map(d => d.url || d);
+            return Promise.all(remoteUrls.map(async (url) => new Promise((resolve) => { const img = new Image(); img.crossOrigin = 'Anonymous'; img.onload = () => { const canvas = document.createElement('canvas'); canvas.width = img.width; canvas.height = img.height; const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0); canvas.toBlob((blob) => { if(blob) resolve(BlobManager.create(blob)); else resolve(url); }, 'image/jpeg', 0.85); }; img.onerror = () => resolve(url); img.src = url; })));
+        }
+    };
+    const PAPER_PRESETS = { 'A1': { w: 594, h: 841, label: 'A1 Print' }, 'A2': { w: 420, h: 594, label: 'A2 Print' }, 'A3': { w: 297, h: 420, label: 'A3 Print' }, 'A4': { w: 210, h: 297, label: 'A4 Print' }, '16:9': { w: 338, h: 190, label: '16:9 Screen' }, '4:3': { w: 280, h: 210, label: '4:3 Screen' }, '1:1': { w: 500, h: 500, label: '1:1 Square' }, '9:16': { w: 190, h: 338, label: '9:16 Mobile' } };
+    const ImageLevel = { S_HERO: 'S_HERO', S1: 'S1', S2: 'S2', S_DETAIL: 'S_DETAIL' };
+    const LevelWeights = { [ImageLevel.S_HERO]: 0, [ImageLevel.S1]: 1, [ImageLevel.S2]: 2, [ImageLevel.S_DETAIL]: 3 };
+    let CURRENT_SCALE = 3; const MAX_CANVAS_PIXELS = 80000000; 
+    function generateId() { return 'g' + Math.random().toString(36).substr(2, 9); }
+    const StateManager = (function() {
+      let instance = null;
+      class StateManager {
+        constructor() { if (instance) return instance; this.images = []; this.heroState = { isHeroMode: false, heroCount: 0, dominanceLevel: 'medium', isHeroReversed: false, flow: 'Landscape' }; this.globalSequence = 0; this.sharedMockUrl = null; this.initSharedResources(); instance = this; }
+        initSharedResources() { const svg = `<svg width="100" height="100" xmlns="http://www.w3.org/2000/svg"><rect width="100" height="100" fill="#f5f5f5"/><line x1="0" y1="0" x2="100" y2="100" stroke="#e5e5e5" stroke-width="1"/><line x1="100" y1="0" x2="0" y2="100" stroke="#e5e5e5" stroke-width="1"/></svg>`; this.sharedMockUrl = BlobManager.create(new Blob([svg], {type: 'image/svg+xml'})); }
+        createPlaceholder(text) { const svg = `<svg width="200" height="200" xmlns="http://www.w3.org/2000/svg"><rect width="200" height="200" fill="#eee"/><text x="50%" y="50%" font-family="monospace" font-size="12" fill="#999" text-anchor="middle" dominant-baseline="middle">${text}</text></svg>`; return BlobManager.create(new Blob([svg], {type: 'image/svg+xml'})); }
+        async addImages(files) {
+          const newEntries = files.map(file => { const tempUrl = BlobManager.create(file); return { id: generateId(), url: tempUrl, originalUrl: tempUrl, name: file.name, level: ImageLevel.S1, index: ++this.globalSequence, isMock: false, text: "", isVideo: file.type.startsWith('video/'), mimeType: file.type, isBlank: false, isProcessing: true, version: 0, blobData: file }; });
+          this.images = [...this.images, ...newEntries]; this.updateHeroState(); UIManager.fullUpdate();
+          for (let i = 0; i < files.length; i++) {
+              const file = files[i], entry = newEntries[i];
+              if (!entry.isVideo) { try { const thumbBlob = await ImageUtils.createThumbnail(file); entry.url = BlobManager.create(thumbBlob); entry.isProcessing = false; entry.version++; } catch(e) { entry.isProcessing = false; entry.version++; } } else { entry.isProcessing = false; entry.version++; }
+          } UIManager.fullUpdate();
+        }
+        addMock(level = ImageLevel.S1, description = "") { this.images.push({ id: generateId(), url: this.sharedMockUrl, name: "MOCK_BLOCK", level: level, index: ++this.globalSequence, isMock: true, text: description, isVideo: false, isBlank: false, version: 0 }); this.updateHeroState(); }
+        addAiMocks(parsedItems) { this.images = []; parsedItems.forEach(item => { for(let i=0; i<(item.count||1); i++) this.addMock(item.level, item.description); }); }
+        addRandomMocks() {
+          let attempts = 0; const maxAttempts = 15; const currentCols = parseInt($('colsInput').value)||8;
+          while(attempts < maxAttempts) {
+              attempts++; this.images = []; const blockCount = Math.floor(Math.random() * 6) + 5; const levels = [ImageLevel.S_HERO, ImageLevel.S1, ImageLevel.S2, ImageLevel.S_DETAIL], weights = [0.2, 0.4, 0.3, 0.1];
+              for (let i = 0; i < blockCount; i++) {
+                let r = Math.random(), selectedLevel = ImageLevel.S1, acc = 0; for(let j=0; j<weights.length; j++) { acc += weights[j]; if(r <= acc) { selectedLevel = levels[j]; break; } }
+                let quantity = (selectedLevel === ImageLevel.S_DETAIL && currentCols >= 2 && Math.random() > 0.5) ? currentCols : 1; for (let q = 0; q < quantity; q++) this.addMock(selectedLevel);
+              }
+              this.updateHeroState(); const sorted = this.getSortedImages(); const currentFlow = $('heroFlowSelect') ? $('heroFlowSelect').value : 'Landscape';
+              const layout = LayoutGenerator.generate(sorted, currentCols, parseInt($('rowsInput').value)||5, currentFlow, { w: 1000, h: 800, margin: 5, gap: 5 });
+              if (!layout.placements.some(p => p.remainingCount > 0)) break; if (attempts < maxAttempts) this.images = [];
+          }
+        }
+        distributeFiles(targetId, files) {
+          this.replaceImageWithFile(targetId, files[0]);
+          for (let i = 1; i < files.length; i++) { const mockIndex = this.images.findIndex(img => img.isMock); if (mockIndex !== -1) this.replaceImageWithFile(this.images[mockIndex].id, files[i]); else this.addImages([files[i]]); } this.updateHeroState();
+        }
+        async replaceImageWithFile(targetId, file) {
+          const index = this.images.findIndex(img => img.id === targetId); if (index !== -1) { const url = BlobManager.create(file); const entry = { ...this.images[index], url: url, originalUrl: url, name: file.name, isMock: false, isVideo: file.type.startsWith('video/'), mimeType: file.type, version: this.images[index].version + 1, isProcessing: true, blobData: file }; this.images[index] = entry; this.updateHeroState(); UIManager.fullUpdate();
+            if (!entry.isVideo) { try { const thumbBlob = await ImageUtils.createThumbnail(file); if (this.images[index].id === entry.id) { this.images[index].url = BlobManager.create(thumbBlob); this.images[index].isProcessing = false; this.images[index].version++; UIManager.fullUpdate(); } } catch(e) { this.images[index].isProcessing = false; } } else { this.images[index].isProcessing = false; } return true; } return false;
+        }
+        replaceImageWithUrl(targetId, newUrl) { const index = this.images.findIndex(img => img.id === targetId); if (index !== -1) { this.images[index] = { ...this.images[index], url: newUrl, originalUrl: newUrl, isMock: false, isAiGenerated: true, isVideo: false, mimeType: 'image/jpeg', version: this.images[index].version + 1, blobData: null }; this.updateHeroState(); return true; } return false; }
+        removeImage(id) { this.images = this.images.filter(img => img.id !== id); this.updateHeroState(); }
+        clearAllImages() { this.images = []; this.updateHeroState(); this.globalSequence = 0; }
+        shuffleImages() {
+          const currentLevels = this.images.map(img => img.level); for (let i = currentLevels.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [currentLevels[i], currentLevels[j]] = [currentLevels[j], currentLevels[i]]; }
+          for (let i = this.images.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [this.images[i], this.images[j]] = [this.images[j], this.images[i]]; }
+          this.images.forEach((img, idx) => { img.level = currentLevels[idx]; img.index = idx; img.version++; }); this.updateHeroState();
+        }
+        updateImageLevel(id, level) { const img = this.images.find(img => img.id === id); if (img) { img.level = level; img.isBlank = false; img.version++; this.updateHeroState(); return true; } return false; }
+        updateImageBlank(id, isBlank) { const img = this.images.find(img => img.id === id); if (img) { img.isBlank = isBlank; img.version++; this.updateHeroState(); return true; } return false; }
+        updateImageText(id, text) { const img = this.images.find(img => img.id === id); if (img) { img.text = text; img.version++; return true; } return false; }
+        swapImages(sourceId, targetId) { const idxA = this.images.findIndex(i => i.id === sourceId), idxB = this.images.findIndex(i => i.id === targetId); if (idxA === -1 || idxB === -1) return false; const sameLevel = this.images[idxA].level === this.images[idxB].level; [this.images[idxA].level, this.images[idxB].level] = [this.images[idxB].level, this.images[idxA].level]; [this.images[idxA].index, this.images[idxB].index] = [this.images[idxB].index, this.images[idxA].index]; this.images[idxA].version++; this.images[idxB].version++; if(!sameLevel) this.updateHeroState(); return true; }
+        updateHeroState() { const heroes = this.images.filter(i => i.level === ImageLevel.S_HERO); this.heroState.heroCount = heroes.length; this.heroState.isHeroMode = heroes.length > 0; const sel = $('heroDominanceSelect'); if (sel) this.heroState.dominanceLevel = sel.value || 'medium'; const flowSel = $('heroFlowSelect'); if (flowSel) this.heroState.flow = flowSel.value || 'Landscape'; }
+        toggleHeroReverse() { this.heroState.isHeroReversed = !this.heroState.isHeroReversed; }
+        getSortedImages() { return [...this.images].sort((a, b) => { const wA = LevelWeights[a.level], wB = LevelWeights[b.level]; if (wA !== wB) return wA - wB; return a.index - b.index; }); }
+        getHeroDominanceRatio() { return this.heroState.dominanceLevel === 'high' ? 0.75 : (this.heroState.dominanceLevel === 'low' ? 0.55 : 0.65); }
+      } return new StateManager();
+    })();
+    const SheetManager = {
+        sheets: [ { id: 0, images: [], heroState: null, meta: null }, { id: 1, images: [], heroState: null, meta: null }, { id: 2, images: [], heroState: null, meta: null }, { id: 3, images: [], heroState: null, meta: null } ], activeSheetId: 0,
+        init() { this.sheets.forEach((sheet, idx) => { sheet.heroState = { isHeroMode: false, heroCount: 0, dominanceLevel: 'medium', isHeroReversed: false }; sheet.meta = { tl: 'PROJECT 001', tr: '2024 / V1.0', bl: 'ARCHITECTURAL STUDY', br: `SHEET A-10${idx+1}` }; }); },
+        switchSheet(newId) {
+            if (newId === this.activeSheetId) return; this.saveCurrentState(); HistoryManager.clear(); const target = this.sheets[newId], source = this.sheets[this.activeSheetId]; if (target.images.length === 0 && source.images.length > 0) this.inheritStructure(target, source); this.activeSheetId = newId; this.restoreState(); document.querySelectorAll('.sheet-tab').forEach(btn => { btn.classList.toggle('active', parseInt(btn.dataset.idx) === newId); }); $('currentSheetLabel').textContent = newId + 1; UIManager.fullUpdate(true); if (OverviewManager.isOverviewMode) OverviewManager.zoomToSheet(newId);
+        },
+        inheritStructure(target, source) { const mockUrl = StateManager.sharedMockUrl; target.images = source.images.map(img => ({ id: generateId(), url: mockUrl, originalUrl: mockUrl, name: 'INHERITED_MOCK', level: img.level, index: img.index, isMock: true, text: "", isVideo: false, isBlank: false, version: 0 })); target.heroState = JSON.parse(JSON.stringify(source.heroState)); },
+        saveCurrentState() {
+            if (this.activeSheetId < 0) return;
+            this.sheets[this.activeSheetId].images = StateManager.images.map(img => ({...img}));
+            this.sheets[this.activeSheetId].heroState = JSON.parse(JSON.stringify(StateManager.heroState));
+            this.sheets[this.activeSheetId].meta = { tl: $('metaTL').value, tr: $('metaTR').value, bl: $('metaBL').value, br: $('metaBR').value };
+        },
+        restoreState() { const target = this.sheets[this.activeSheetId]; StateManager.images = target.images.map(img => ({...img})); StateManager.heroState = JSON.parse(JSON.stringify(target.heroState)); $('metaTL').value = target.meta.tl; $('metaTR').value = target.meta.tr; $('metaBL').value = target.meta.bl; $('metaBR').value = target.meta.br; if($('heroFlowSelect')) $('heroFlowSelect').value = target.heroState.flow || 'Landscape'; if($('heroDominanceSelect')) $('heroDominanceSelect').value = target.heroState.dominanceLevel; if($('heroReverseBtn')) $('heroReverseBtn').classList.toggle('active', target.heroState.isHeroReversed); },
+        hasMotionContent() { return StateManager.images.some(img => img.isVideo || (img.mimeType === 'image/gif')); }
+    };
+    const HistoryManager = {
+        stack: [], ptr: -1, limit: 50, isProcessing: false, gcTimer: null,
+        init() { this.pushState(); }, clear() { this.stack = []; this.ptr = -1; this.updateButtons(); },
+        snapshot() { const config = {}; document.querySelectorAll('.input-history').forEach(el => { config[el.id] = el.value; }); return { sheetId: SheetManager.activeSheetId, images: StateManager.images.map(i=>({...i})), heroState: JSON.parse(JSON.stringify(StateManager.heroState)), config: config }; },
+        pushState() { if (this.isProcessing) return; if (this.ptr < this.stack.length - 1) this.stack = this.stack.slice(0, this.ptr + 1); this.stack.push(this.snapshot()); if (this.stack.length > this.limit) { this.stack.shift(); } else { this.ptr++; } this.updateButtons(); if (this.gcTimer) clearTimeout(this.gcTimer); this.gcTimer = setTimeout(() => { this.performGarbageCollection(); }, 2000); 
+            AutoSaveManager.markDirty(); // Trigger Autosave
+        },
+        undo() { if (this.ptr > 0) { this.ptr--; this.restore(this.stack[this.ptr]); this.updateButtons(); AutoSaveManager.markDirty(); } },
+        redo() { if (this.ptr < this.stack.length - 1) { this.ptr++; this.restore(this.stack[this.ptr]); this.updateButtons(); AutoSaveManager.markDirty(); } },
+        restore(state) {
+            this.isProcessing = true; if (state.sheetId !== SheetManager.activeSheetId) SheetManager.switchSheet(state.sheetId); StateManager.images = state.images.map(i=>({...i})); StateManager.heroState = JSON.parse(JSON.stringify(state.heroState));
+            for (const [id, value] of Object.entries(state.config)) { const el = $(id); if (el) { el.value = value; if(id === 'algoInput') { UIManager.updateAlgoUI(value); } } }
+            if ($('heroReverseBtn')) $('heroReverseBtn').classList.toggle('active', StateManager.heroState.isHeroReversed); UIManager.fullUpdate(false); this.isProcessing = false;
+        },
+        updateButtons() { $('undoBtn').disabled = this.ptr <= 0; $('redoBtn').disabled = this.ptr >= this.stack.length - 1; },
+        performGarbageCollection() { const activeUrls = new Set(); StateManager.images.forEach(img => { if(img.url) activeUrls.add(img.url); if(img.originalUrl) activeUrls.add(img.originalUrl); }); this.stack.forEach(snap => { snap.images.forEach(img => { if(img.url) activeUrls.add(img.url); if(img.originalUrl) activeUrls.add(img.originalUrl); }); }); SheetManager.sheets.forEach(sheet => { if (sheet.id === SheetManager.activeSheetId) return; sheet.images.forEach(img => { if(img.url) activeUrls.add(img.url); if(img.originalUrl) activeUrls.add(img.originalUrl); }); }); if(StateManager.sharedMockUrl) activeUrls.add(StateManager.sharedMockUrl); BlobManager.gc(activeUrls); }
+    };
+    const CropManager = {
+        cropper: null, targetImageId: null,
+        init() { $('saveCropBtn').addEventListener('click', () => this.saveCrop()); $('cancelCropBtn').addEventListener('click', () => this.close()); },
+        open(imageId, url, aspectRatio) {
+            this.targetImageId = imageId; const modal = $('cropModal'), imgEl = $('cropImageTarget'), imgData = StateManager.images.find(i => i.id === imageId);
+            if(imgData && imgData.isVideo) { alert("Video cropping not supported."); return; }
+            imgEl.src = imgData.originalUrl || imgData.url || url; modal.classList.remove('hidden');
+            if (this.cropper) this.cropper.destroy(); this.cropper = new Cropper(imgEl, { viewMode: 1, dragMode: 'move', autoCropArea: 1, aspectRatio: aspectRatio || NaN, restore: false, guides: true, center: true, highlight: false, cropBoxMovable: true, cropBoxResizable: true, toggleDragModeOnDblclick: false, ready: function () { if (imgData && imgData.cropData) this.cropper.setData(imgData.cropData); }, });
+        },
+        saveCrop() { if (!this.cropper) return; const canvas = this.cropper.getCroppedCanvas(), cropData = this.cropper.getData(); if (!canvas) return; canvas.toBlob((blob) => { const newUrl = BlobManager.create(blob), img = StateManager.images.find(i => i.id === this.targetImageId); if (img) { img.url = newUrl; img.cropData = cropData; img.version++; img.blobData = blob; UIManager.fullUpdate(); this.close(); } }); },
+        close() { $('cropModal').classList.add('hidden'); if (this.cropper) { this.cropper.destroy(); this.cropper = null; } this.targetImageId = null; }
+    };
+    const OverviewManager = {
+        isOverviewMode: false, sheetCoords: [ { x: -350, y: -50, z: 100 }, { x: -50, y: -50, z: -50 }, { x: 250, y: -50, z: -200 }, { x: 550, y: -50, z: -350 } ],
+        init() {
+            $('toggle3dBtn').addEventListener('click', () => this.toggle());
+            $('viewport-wrapper').addEventListener('mousemove', (e) => { if(!this.isOverviewMode) return; const x = (e.clientX / window.innerWidth - 0.5) * 2, y = (e.clientY / window.innerHeight - 0.5) * 2; const scene = $('scene3d'); if(!scene.classList.contains('zooming')) scene.style.transform = `translateZ(-600px) rotateY(${30 + x*5}deg) rotateX(${10 - y*5}deg)`; });
+        },
+        toggle() {
+            if (!this.isOverviewMode) {
+                this.isOverviewMode = true; SheetManager.saveCurrentState(); this.render();
+                $('toggle3dBtn').classList.add('active'); $('zoomHint').style.opacity = '0'; $('scene3d').classList.add('zooming'); $('gridOuter').classList.add('view-inactive'); $('overviewStage').classList.add('view-active');
+                requestAnimationFrame(() => { this.resetCamera(); setTimeout(() => $('scene3d').classList.remove('zooming'), 850); });
+            } else { this.zoomToSheet(SheetManager.activeSheetId); }
+        },
+        resetCamera() { $('scene3d').style.transform = `translateZ(-600px) rotateY(30deg) rotateX(10deg)`; },
+        zoomToSheet(index) {
+            const scene = $('scene3d'); scene.classList.add('zooming'); const target = this.sheetCoords[index];
+            scene.style.transform = `translate3d(${-target.x}px, ${-target.y}px, ${-target.z + 200}px) rotateY(0deg) rotateX(0deg)`;
+            setTimeout(() => { if (this.isOverviewMode) { this.isOverviewMode = false; $('toggle3dBtn').classList.remove('active'); $('overviewStage').classList.remove('view-active'); $('gridOuter').classList.remove('view-inactive'); SheetManager.switchSheet(index); scene.classList.remove('zooming'); $('zoomHint').style.opacity = '0.5'; if(UIManager.resetView) UIManager.resetView(); } }, 750);
+        },
+        render() {
+            const scene = $('scene3d'); scene.innerHTML = ''; const cols = parseInt($('colsInput').value)||8, rows = parseInt($('rowsInput').value)||5, paper = $('paperSizeSelect').value || 'A1', paperOrient = $('paperOrientationSelect').value || 'portrait';
+            const paperConfig = PAPER_PRESETS[paper] || PAPER_PRESETS['A1'], rawMargin = parseInt($('marginSlider').value), rawGap = parseInt($('gapSlider').value), marginPx = isNaN(rawMargin) ? 5 : rawMargin, gapPx = isNaN(rawGap) ? 2 : rawGap;
+            let wMM = paperConfig.w, hMM = paperConfig.h; if(paperOrient === 'landscape') { [wMM, hMM] = [hMM, wMM]; }
+            const ratio = wMM / hMM, cardH = 396, cardW = cardH * ratio;
+            SheetManager.sheets.forEach((sheet, idx) => {
+                const pos = this.sheetCoords[idx], card = document.createElement('div'); card.className = `sheet-card-3d`; card.style.width = `${cardW}px`; card.style.height = `${cardH}px`; card.style.left = `-${cardW/2}px`; card.style.top = `-${cardH/2}px`; card.style.transform = `translate3d(${pos.x}px, ${pos.y}px, ${pos.z}px)`;
+                const innerCanvas = document.createElement('div'); innerCanvas.className = 'w-full h-full relative bg-white overflow-hidden'; innerCanvas.style.padding = `${marginPx}px`;
+                const miniGrid = document.createElement('div'); miniGrid.style.display = 'grid'; miniGrid.style.width = '100%'; miniGrid.style.height = '100%'; miniGrid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`; miniGrid.style.gridTemplateRows = `repeat(${rows}, 1fr)`; miniGrid.style.gap = `${gapPx}px`;
+                const sortedImages = [...sheet.images].sort((a, b) => { const wA = LevelWeights[a.level], wB = LevelWeights[b.level]; return wA !== wB ? wA - wB : a.index - b.index; });
+                const originalHeroState = {...StateManager.heroState}; StateManager.heroState = sheet.heroState; const heroFlow = $('heroFlowSelect') ? $('heroFlowSelect').value : 'Landscape';
+                const layout = LayoutGenerator.generate(sortedImages, cols, rows, heroFlow, { w: cardW, h: cardH, margin: marginPx, gap: gapPx });
+                StateManager.heroState = originalHeroState;
+                layout.placements.forEach(p => { const img = sheet.images.find(i => i.id === p.imageId); if (img) { const cell = document.createElement('div'); cell.style.gridColumn = `${p.colStart} / span ${p.colSpan}`; cell.style.gridRow = `${p.rowStart} / span ${p.rowSpan}`; cell.className = `mini-cell ${img.isBlank ? 'is-blank' : (img.isMock ? '' : 'filled')}`; if (!img.isBlank && !img.isMock) { if(img.isVideo) { cell.style.background = '#111'; cell.innerHTML = '<span style="color:white;font-size:8px">▶</span>'; cell.style.display = 'flex'; cell.style.alignItems='center'; cell.style.justifyContent='center'; } else { cell.style.backgroundImage = `url(${img.url})`; } } if (img.level === 'S_HERO' && !img.isBlank) { cell.style.border = '1px solid #2563eb'; cell.style.zIndex = '5'; } miniGrid.appendChild(cell); } });
+                innerCanvas.appendChild(miniGrid); card.appendChild(innerCanvas); const label = document.createElement('div'); label.className = 'sheet-label-3d'; label.innerText = `SHEET ${idx+1}`; card.appendChild(label); card.addEventListener('click', (e) => { e.stopPropagation(); this.zoomToSheet(idx); });
+                if (idx === SheetManager.activeSheetId) { card.style.borderColor = '#2563eb'; card.style.boxShadow = '0 0 0 1px #2563eb, 0 20px 40px rgba(37,99,235,0.2)'; } scene.appendChild(card);
+            });
+        }
+    };
+    const TemplateManager = {
+        presets: [ { id: 'classic', name: 'Classic 4x3', cols: 4, rows: 3, gap: 5, margin: 10, mocks: 8, hero: false }, { id: 'dense', name: 'Dense 8x6', cols: 8, rows: 6, gap: 2, margin: 5, mocks: 48, hero: false }, { id: 'portfolio', name: 'Portfolio Hero', cols: 6, rows: 4, gap: 4, margin: 8, mocks: 13, hero: true }, { id: 'social', name: 'Square Social', cols: 3, rows: 3, paper: '1:1', gap: 2, margin: 2, mocks: 9, hero: false }, { id: 'editorial', name: 'Editorial', cols: 12, rows: 8, paper: '16:9', gap: 3, margin: 15, mocks: 20, hero: true }, { id: 'swiss', name: 'Swiss 12-Col', cols: 12, rows: 6, gap: 2, margin: 10, mocks: 10, hero: true }, { id: 'filmstrip', name: 'Film Strip', cols: 12, rows: 2, gap: 2, margin: 20, mocks: 12, hero: false }, { id: 'golden', name: 'Golden Canon', cols: 8, rows: 5, gap: 2, margin: 12, mocks: 6, hero: true }, { id: 'insta_feed', name: 'Insta Grid', cols: 3, rows: 4, paper: '9:16', gap: 1, margin: 0, mocks: 12, hero: false }, { id: 'diptych', name: 'Diptych', cols: 2, rows: 1, paper: '16:9', gap: 0, margin: 0, mocks: 2, hero: false }, { id: 'triptych', name: 'Triptych', cols: 3, rows: 1, paper: '16:9', gap: 0, margin: 0, mocks: 3, hero: false }, { id: 'minimalist', name: 'Minimalist', cols: 1, rows: 1, paper: 'A4', gap: 0, margin: 60, mocks: 1, hero: true } ], custom: [],
+        init() { this.loadCustom(); const openBtn = $('openTemplateBtn'), closeBtn = $('closeTemplateBtn'), saveBtn = $('saveCurrentTemplateBtn'), modal = $('templateModal'); if (openBtn && modal) openBtn.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); this.render(); modal.classList.remove('hidden'); }); if (closeBtn && modal) closeBtn.addEventListener('click', () => { modal.classList.add('hidden'); }); if (saveBtn) saveBtn.addEventListener('click', () => { const nameInput = $('newTemplateName'), name = (nameInput?.value?.trim()) || `My Layout ${this.custom.length + 1}`; this.saveCustom(name); if (nameInput) nameInput.value = ''; }); if (modal) modal.addEventListener('click', (e) => { if (e.target === modal) modal.classList.add('hidden'); }); },
+        loadCustom() { const saved = localStorage.getItem('gf_templates'); if(saved) { try { this.custom = JSON.parse(saved); } catch(e) {} } },
+        saveCustom(name) { const t = { id: `custom_${Date.now()}`, name: name, cols: parseInt($('colsInput').value), rows: parseInt($('rowsInput').value), gap: parseInt($('gapSlider').value), margin: parseInt($('marginSlider').value), paper: $('paperSizeSelect').value, hero: StateManager.heroState.isHeroMode, mocks: StateManager.images.length }; this.custom.push(t); localStorage.setItem('gf_templates', JSON.stringify(this.custom)); this.render(); },
+        deleteCustom(id) { this.custom = this.custom.filter(t => t.id !== id); localStorage.setItem('gf_templates', JSON.stringify(this.custom)); this.render(); },
+        createPreview(t, container) {
+            try { const originalHero = {...StateManager.heroState}; StateManager.heroState.isHeroMode = t.hero; StateManager.heroState.heroCount = t.hero ? 1 : 0; StateManager.heroState.flow = 'Landscape'; StateManager.heroState.dominanceLevel = 'medium'; const items = []; if(t.hero) items.push({ id: 'p_hero', level: 'S_HERO', index: 0 }); const count = t.mocks || (t.cols * t.rows), safeCount = Math.min(count, 50); for(let i=0; i<safeCount; i++) items.push({ id: `p_${i}`, level: 'S1', index: i+1 }); const layout = LayoutGenerator.generate(items, t.cols, t.rows, 'Landscape', { w: 100, h: 80, margin: 0, gap: 0 }); container.innerHTML = ''; container.style.gridTemplateColumns = `repeat(${t.cols}, 1fr)`; container.style.gridTemplateRows = `repeat(${t.rows}, 1fr)`; container.style.gap = '2px'; if (layout && layout.placements) { layout.placements.forEach(p => { const d = document.createElement('div'); d.style.gridColumn = `${p.colStart} / span ${p.colSpan}`; d.style.gridRow = `${p.rowStart} / span ${p.rowSpan}`; d.className = 'mini-layout-cell'; if(items.find(x=>x.id===p.imageId)?.level === 'S_HERO') d.classList.add('hero'); container.appendChild(d); }); } StateManager.heroState = originalHero; } catch (err) { container.innerHTML = '<div class="text-[8px] text-red-500 p-1">Preview Error</div>'; }
+        },
+        render() {
+            const presetContainer = $('templateGrid'), customContainer = $('customTemplateGrid'); const createCard = (t, isCustom) => { const card = document.createElement('div'); card.className = "template-card border border-line cursor-pointer bg-paper flex flex-col h-32 relative group"; const preview = document.createElement('div'); preview.className = "mini-layout-preview flex-1 border-b border-line"; this.createPreview(t, preview); card.appendChild(preview); const info = document.createElement('div'); info.className = "p-2 bg-paper text-ink"; info.innerHTML = `<div class="text-[9px] font-bold uppercase truncate">${t.name}</div><div class="text-[8px] text-graphite font-mono flex justify-between"><span>${t.cols}x${t.rows}</span><span>${t.hero ? 'HERO' : 'FLAT'}</span></div>`; card.appendChild(info); card.addEventListener('click', () => this.apply(t)); if(isCustom) { const delBtn = document.createElement('button'); delBtn.className = "absolute top-1 right-1 w-4 h-4 bg-red-500 text-white text-[8px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition"; delBtn.innerHTML = "✕"; delBtn.onclick = (e) => { e.stopPropagation(); this.deleteCustom(t.id); }; card.appendChild(delBtn); } return card; }; presetContainer.innerHTML = ''; this.presets.forEach(t => presetContainer.appendChild(createCard(t, false))); customContainer.innerHTML = ''; if(this.custom.length === 0) customContainer.innerHTML = '<div class="col-span-3 text-[9px] text-gray-400 text-center py-4 italic">No custom templates saved.</div>'; else this.custom.forEach(t => customContainer.appendChild(createCard(t, true)));
+        },
+        apply(t) { $('colsInput').value = t.cols; $('rowsInput').value = t.rows; $('gapSlider').value = t.gap; $('gapValue').textContent = t.gap + 'px'; $('marginSlider').value = t.margin; $('marginValue').textContent = t.margin + 'px'; if(t.paper) $('paperSizeSelect').value = t.paper; StateManager.clearAllImages(); if (t.id === 'portfolio') { StateManager.addMock('S_HERO'); for(let i=0; i<6; i++) StateManager.addMock('S1'); for(let i=0; i<6; i++) StateManager.addMock('S2'); } else { const count = t.mocks || 8; for(let i=0; i<count; i++) StateManager.addMock(); if(t.hero && StateManager.images.length > 0) StateManager.updateImageLevel(StateManager.images[0].id, 'S_HERO'); } UIManager.fullUpdate(); $('templateModal').classList.add('hidden'); }
+    };
+    const ProjectManager = {
+        async fetchBlob(url) { try { const controller = new AbortController(); const timeoutId = setTimeout(() => controller.abort(), 8000); const response = await fetch(url, { signal: controller.signal }); clearTimeout(timeoutId); if (!response.ok) throw new Error('Fetch failed'); return await response.blob(); } catch (e) { return null; } },
+        async blobToBase64(blob) { return new Promise((resolve, reject) => { const reader = new FileReader(); reader.onloadend = () => resolve(reader.result); reader.onerror = reject; reader.readAsDataURL(blob); }); },
+        // --- Enhanced Data Preparation (Supports both Export & AutoSave) ---
+        async prepareData(forFileExport = false) {
+             SheetManager.saveCurrentState();
+             const sheetsExport = JSON.parse(JSON.stringify(SheetManager.sheets));
+             for (let sheet of sheetsExport) {
+                if (!forFileExport) await new Promise(r => setTimeout(r, 0)); // Non-blocking for AutoSave
+                const processImage = async (img) => {
+                    const originalImg = StateManager.images.find(i => i.id === img.id) || SheetManager.sheets.flatMap(s => s.images).find(i => i.id === img.id);
+                    if (!img.isMock && (img.url || (originalImg && originalImg.blobData))) {
+                        let blob = originalImg ? originalImg.blobData : null;
+                        if (!blob && img.url && !img.url.startsWith('data:')) { blob = await this.fetchBlob(img.url); }
+                        if (blob) { if (forFileExport) { img.embeddedData = await this.blobToBase64(blob); } else { img.blobData = blob; } } else if (img.url && img.url.startsWith('data:')) { img.embeddedData = img.url; }
+                        img.url = null; img.originalUrl = null;
+                    }
+                };
+                const chunkSize = 4;
+                for (let i = 0; i < sheet.images.length; i += chunkSize) { const chunk = sheet.images.slice(i, i + chunkSize); await Promise.all(chunk.map(processImage)); if (!forFileExport) await new Promise(r => setTimeout(r, 0)); }
+             }
+             return { version: "4.9.1", date: new Date().toISOString(), sheets: sheetsExport, globalSettings: { cols: $('colsInput').value, rows: $('rowsInput').value, gap: $('gapSlider').value, margin: $('marginSlider').value, paper: $('paperSizeSelect').value, orient: $('paperOrientationSelect').value, fontSize: $('fontSizeInput').value, lineHeight: $('lineHeightInput').value, algo: $('algoInput').value, meta: { tl: $('metaTL').value, tr: $('metaTR').value, bl: $('metaBL').value, br: $('metaBR').value } } };
+        },
+        async prepareForAutoSave() { return await this.prepareData(false); },
+        async save() { ExportManager.showLoading('SAVING PROJECT FILE...'); setTimeout(async () => { try { const projectData = await this.prepareData(true); const jsonString = JSON.stringify(projectData); const blob = new Blob([jsonString], { type: 'application/json' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `GridForge_Project_${Date.now()}.gforge`; a.click(); URL.revokeObjectURL(url); AutoSaveManager.isDirty = false; AutoSaveManager.updateUI('saved'); } catch (e) { alert("Save failed: " + e.message); } finally { ExportManager.hideLoading(); } }, 100); },
+        // --- Enhanced Load Logic ---
+        async loadFromData(data) {
+            try {
+                if(data.globalSettings) { $('colsInput').value = data.globalSettings.cols; $('rowsInput').value = data.globalSettings.rows; $('gapSlider').value = data.globalSettings.gap; $('gapValue').textContent = data.globalSettings.gap + 'px'; $('marginSlider').value = data.globalSettings.margin; $('marginValue').textContent = data.globalSettings.margin + 'px'; $('paperSizeSelect').value = data.globalSettings.paper; $('paperOrientationSelect').value = data.globalSettings.orient; if (data.globalSettings.fontSize) $('fontSizeInput').value = data.globalSettings.fontSize; if (data.globalSettings.lineHeight) $('lineHeightInput').value = data.globalSettings.lineHeight; if (data.globalSettings.algo) { $('algoInput').value = data.globalSettings.algo; UIManager.updateAlgoUI(data.globalSettings.algo); } if (data.globalSettings.meta) { $('metaTL').value = data.globalSettings.meta.tl || ""; $('metaTR').value = data.globalSettings.meta.tr || ""; $('metaBL').value = data.globalSettings.meta.bl || ""; $('metaBR').value = data.globalSettings.meta.br || ""; } }
+                StateManager.clearAllImages();
+                for (let i = 0; i < SheetManager.sheets.length; i++) {
+                    const savedSheet = data.sheets.find(s => s.id === i);
+                    if(savedSheet) {
+                        if (savedSheet.meta) SheetManager.sheets[i].meta = savedSheet.meta; else if (data.globalSettings.meta) SheetManager.sheets[i].meta = data.globalSettings.meta;
+                        SheetManager.sheets[i].heroState = savedSheet.heroState;
+                        const restoredImages = [];
+                        for (let img of savedSheet.images) {
+                            let restoredUrl = StateManager.sharedMockUrl, isMock = img.isMock, text = img.text, embeddedData = img.embeddedData, blobData = img.blobData;
+                            if (!isMock) {
+                                if (blobData) { restoredUrl = BlobManager.create(blobData); } else if (embeddedData) { try { const res = await fetch(embeddedData); const blob = await res.blob(); restoredUrl = BlobManager.create(blob); blobData = blob; } catch (err) { restoredUrl = StateManager.createPlaceholder("DATA ERROR"); isMock = true; } } else { restoredUrl = StateManager.createPlaceholder("MISSING"); isMock = true; }
+                            }
+                            restoredImages.push({ ...img, id: generateId(), url: restoredUrl, originalUrl: restoredUrl, isMock: isMock, text: text, embeddedData: null, blobData: blobData, version: 0 });
+                        }
+                        SheetManager.sheets[i].images = restoredImages;
+                    } else { SheetManager.sheets[i].images = []; }
+                }
+                SheetManager.activeSheetId = -1; SheetManager.switchSheet(0);
+                return true;
+            } catch(err) { console.error(err); return false; }
+        },
+        async load(file) { ExportManager.showLoading('LOADING PROJECT...'); const reader = new FileReader(); reader.onload = async (e) => { try { const data = JSON.parse(e.target.result); if(data.version && data.sheets) { await this.loadFromData(data); alert("Project Loaded Successfully."); } } catch(err) { alert("Invalid Project File or Load Error"); } finally { ExportManager.hideLoading(); } }; reader.readAsText(file); },
+        async restoreAutoSave() { ExportManager.showLoading('RESTORING SESSION...'); try { const data = await LocalDB.load(); if (data) { await this.loadFromData(data); console.log("Session restored from AutoSave"); } } catch(e) { console.log("No AutoSave found or error restoring"); } finally { ExportManager.hideLoading(); } }
+    };
+    const ExportManager = {
+        showLoading(msg) { $('loadingMsg').innerText = msg; $('loadingOverlay').classList.add('active'); }, hideLoading() { $('loadingOverlay').classList.remove('active'); },
+        async renderHighResCanvas(targetWidthPx = 6000) {
+            const node = $('gridCanvas'), outer = $('gridOuter'), wrapper = $('viewport-wrapper');
+            const currentWrapperWidth = wrapper.clientWidth - 64, exportScale = targetWidthPx / currentWrapperWidth;
+            const originalTransform = node.style.transform, originalOuterTransform = outer.style.transform, originalOuterWidth = outer.style.width, originalOuterHeight = outer.style.height;
+            UIManager.autoGenerate(exportScale); node.style.transform = 'scale(1)'; outer.style.transform = 'scale(1)';
+            await new Promise(r => setTimeout(r, 600));
+            try { const canvas = await html2canvas(node, { scale: 1, useCORS: true, allowTaint: true, backgroundColor: '#ffffff', logging: false, imageTimeout: 0 }); return canvas; } catch(e) { throw e; } finally { node.style.transform = originalTransform; outer.style.transform = originalOuterTransform; outer.style.width = originalOuterWidth; outer.style.height = originalOuterHeight; UIManager.autoGenerate(); }
+        },
+        async downloadPNG() { this.showLoading('RENDERING HIGH-RES IMAGE...'); await new Promise(r => setTimeout(r, 50)); try { const canvas = await this.renderHighResCanvas(6000); const link = document.createElement('a'); link.download = `Sheet_${SheetManager.activeSheetId + 1}_${Date.now()}.png`; link.href = canvas.toDataURL('image/png'); link.click(); } catch (e) { alert('Export Failed: ' + e.message); } finally { this.hideLoading(); } },
+        async downloadAllSheetsPDF() {
+            this.showLoading('GENERATING HI-DEF PDF...'); SheetManager.saveCurrentState(); await new Promise(r => setTimeout(r, 100));
+            try { const paperKey = $('paperSizeSelect').value || 'A1', orient = $('paperOrientationSelect').value || 'portrait', paperConfig = PAPER_PRESETS[paperKey] || PAPER_PRESETS['A1'], baseWidth = 2480, scaleFactor = paperConfig.w / 210, targetPx = Math.min(5000, Math.round(baseWidth * scaleFactor));
+                const pdf = new jspdf.jsPDF({ orientation: orient === 'landscape' ? 'l' : 'p', unit: 'mm', format: [paperConfig.w, paperConfig.h] }); const pdfW = pdf.internal.pageSize.getWidth(), pdfH = pdf.internal.pageSize.getHeight(), originalSheetId = SheetManager.activeSheetId;
+                let pagesAdded = 0; for (let i = 0; i < 4; i++) { if (SheetManager.sheets[i].images.length === 0) continue; SheetManager.switchSheet(i); await new Promise(resolve => setTimeout(resolve, 200)); const canvas = await this.renderHighResCanvas(targetPx); const imgData = canvas.toDataURL('image/jpeg', 0.90); if (pagesAdded > 0) pdf.addPage(); pdf.addImage(imgData, 'JPEG', 0, 0, pdfW, pdfH); pagesAdded++; }
+                SheetManager.switchSheet(originalSheetId); if (pagesAdded === 0) alert("No content to export."); else pdf.save(`GridForge_Export_${Date.now()}.pdf`);
+            } catch (e) { alert('PDF Generation Failed'); } finally { this.hideLoading(); }
+        }
+    };
+    const HelpManager = { init() { const btn = $('btnHelp'), modal = $('helpModal'), close = $('closeHelpBtn'); btn.addEventListener('click', () => { modal.classList.remove('hidden'); }); close.addEventListener('click', () => { modal.classList.add('hidden'); }); modal.addEventListener('click', (e) => { if(e.target === modal) modal.classList.add('hidden'); }); } };
+    const LayoutGenerator = {
+      generate(images, cols, rows, orientation, pixelDims) { const algo = $('algoInput') ? $('algoInput').value : 'v5'; if (algo === 'v4') { return this.generateRecursive(images, cols, rows, orientation); } else { return this.generateTopLeft(images, cols, rows, orientation, pixelDims); } },
+      generateTopLeft(images, cols, rows, orientation, pixelDims) {
+        const heroState = StateManager.heroState; let safeMargin = pixelDims.margin, safeGap = pixelDims.gap;
+        const density = cols * rows; 
+        // MODIFIED: Increased thresholds to relax auto-fit (was 100/169)
+        if (density > 256) { safeMargin = Math.min(safeMargin, 3 * (pixelDims.w / 1000)); safeGap = Math.min(safeGap, 2 * (pixelDims.w / 1000)); } 
+        if (density > 400) { safeMargin = Math.min(safeMargin, 2 * (pixelDims.w / 1000)); safeGap = Math.min(safeGap, 1 * (pixelDims.w / 1000)); }
+        
+        const heroes = images.filter(i => i.level === ImageLevel.S_HERO), s1List = images.filter(i => i.level === ImageLevel.S1), s2List = images.filter(i => i.level === ImageLevel.S2), details = images.filter(i => i.level === ImageLevel.S_DETAIL), isLandscape = orientation === 'Landscape', placements = [], detailRows = details.length > 0 ? Math.min(1, rows - 1) : 0, mainRows = Math.max(1, rows - detailRows);
+        if (mainRows <= 0) { const allItems = [...heroes, ...s1List, ...s2List, ...details]; placements.push(...this.placeItemsTopLeftPriority(allItems, 0, 0, cols, rows)); return { placements, gridCols: cols, gridRows: rows, adjustedGap: safeGap, adjustedMargin: safeMargin }; }
+        const mainItems = [...heroes, ...s1List, ...s2List];
+        if (heroes.length > 0 && mainItems.length > 0) {
+            const sideItems = [...s1List, ...s2List], domRatio = heroState.dominanceLevel === 'high' ? 0.70 : heroState.dominanceLevel === 'low' ? 0.45 : 0.55;
+            if (sideItems.length === 0) { placements.push(...this.placeItemsTopLeftPriority(heroes, 0, 0, cols, mainRows)); } else {
+                if (isLandscape) { let heroW = Math.max(1, Math.round(cols * domRatio)), sideW = cols - heroW; if (sideW < 1) { sideW = 1; heroW = cols - 1; } if (cols < 2) { placements.push(...this.recursiveSplit(mainItems, 0, 0, cols, mainRows, [], 'main')); } else { const heroCol = heroState.isHeroReversed ? sideW : 0, sideCol = heroState.isHeroReversed ? 0 : heroW; placements.push(...this.placeItemsTopLeftPriority(heroes, heroCol, 0, heroW, mainRows)); placements.push(...this.placeItemsSmart(sideItems, sideCol, 0, sideW, mainRows, isLandscape)); } }
+                else { let heroH = Math.max(1, Math.round(mainRows * domRatio)), sideH = mainRows - heroH; if (sideH < 1) { sideH = 1; heroH = mainRows - 1; } if (mainRows < 2) { placements.push(...this.recursiveSplit(mainItems, 0, 0, cols, mainRows, [], 'main')); } else { const heroRow = heroState.isHeroReversed ? sideH : 0, sideRow = heroState.isHeroReversed ? 0 : heroH; placements.push(...this.placeItemsTopLeftPriority(heroes, 0, heroRow, cols, heroH)); placements.push(...this.placeItemsSmart(sideItems, 0, sideRow, cols, sideH, !isLandscape)); } }
+            }
+        } else if (mainItems.length > 0) { placements.push(...this.placeItemsTopLeftPriority(mainItems, 0, 0, cols, mainRows)); }
+        if (details.length > 0 && detailRows > 0) { placements.push(...this.placeItemsTopLeftPriority(details, 0, mainRows, cols, detailRows)); }
+        this.validateAndFillGaps(placements, cols, rows, images); return { placements, gridCols: cols, gridRows: rows, adjustedGap: safeGap, adjustedMargin: safeMargin };
+      },
+      placeItemsSmart(items, startCol, startRow, areaW, areaH, splitVertical) {
+        if (items.length === 0 || areaW <= 0 || areaH <= 0) return [];
+        const s1 = items.filter(i => i.level === ImageLevel.S1), s2 = items.filter(i => i.level === ImageLevel.S2);
+        if (s1.length === 0 || s2.length === 0) return this.placeItemsTopLeftPriority(items, startCol, startRow, areaW, areaH);
+        const results = [], s1Ratio = 0.55;
+        if (splitVertical && areaH >= 2) { const s1H = Math.max(1, Math.round(areaH * s1Ratio)), s2H = areaH - s1H; results.push(...this.placeItemsTopLeftPriority(s1, startCol, startRow, areaW, s1H)); if (s2H > 0) results.push(...this.placeItemsTopLeftPriority(s2, startCol, startRow + s1H, areaW, s2H)); else results.push(...this.placeItemsTopLeftPriority(s2, startCol, startRow, areaW, s1H)); }
+        else if (!splitVertical && areaW >= 2) { const s1W = Math.max(1, Math.round(areaW * s1Ratio)), s2W = areaW - s1W; results.push(...this.placeItemsTopLeftPriority(s1, startCol, startRow, s1W, areaH)); if (s2W > 0) results.push(...this.placeItemsTopLeftPriority(s2, startCol + s1W, startRow, s2W, areaH)); else results.push(...this.placeItemsTopLeftPriority(s2, startCol, startRow, s1W, areaH)); }
+        else { results.push(...this.placeItemsTopLeftPriority(items, startCol, startRow, areaW, areaH)); } return results;
+      },
+      validateAndFillGaps(placements, cols, rows, allImages) {
+        const occupied = []; for (let r = 0; r < rows; r++) occupied.push(new Array(cols).fill(null));
+        for (const p of placements) { for (let r = p.rowStart - 1; r < p.rowStart - 1 + p.rowSpan; r++) { for (let c = p.colStart - 1; c < p.colStart - 1 + p.colSpan; c++) { if (r >= 0 && r < rows && c >= 0 && c < cols) occupied[r][c] = p.imageId; } } }
+        const gaps = []; for (let r = 0; r < rows; r++) { for (let c = 0; c < cols; c++) { if (occupied[r][c] === null) gaps.push({ row: r, col: c }); } }
+        if (gaps.length > 0) {
+            for (const gap of gaps) { if (occupied[gap.row][gap.col] !== null) continue;
+                const neighbors = [ { r: gap.row - 1, c: gap.col }, { r: gap.row + 1, c: gap.col }, { r: gap.row, c: gap.col - 1 }, { r: gap.row, c: gap.col + 1 } ];
+                let filled = false;
+                for (const n of neighbors) { if (n.r >= 0 && n.r < rows && n.c >= 0 && n.c < cols) { const neighborId = occupied[n.r][n.c]; if (neighborId) { const placement = placements.find(p => p.imageId === neighborId); if (placement) { const newColStart = Math.min(placement.colStart - 1, gap.col), newRowStart = Math.min(placement.rowStart - 1, gap.row), newColEnd = Math.max(placement.colStart - 1 + placement.colSpan, gap.col + 1), newRowEnd = Math.max(placement.rowStart - 1 + placement.rowSpan, gap.row + 1); let isValidRect = true; for(let r = newRowStart; r < newRowEnd; r++) { for(let c = newColStart; c < newColEnd; c++) { if (occupied[r][c] !== null && occupied[r][c] !== neighborId) { isValidRect = false; break; } } } if (isValidRect) { placement.colStart = newColStart + 1; placement.rowStart = newRowStart + 1; placement.colSpan = newColEnd - newColStart; placement.rowSpan = newRowEnd - newRowStart; for(let r = newRowStart; r < newRowEnd; r++) { for(let c = newColStart; c < newColEnd; c++) { occupied[r][c] = neighborId; } } filled = true; break; } } } } }
+                if (!filled && allImages.length > 0) { const fallbackImg = allImages[0], newP = { imageId: fallbackImg.id, colStart: gap.col + 1, rowStart: gap.row + 1, colSpan: 1, rowSpan: 1, remainingCount: 0 }; placements.push(newP); occupied[gap.row][gap.col] = fallbackImg.id; }
+            }
+        }
+      },
+      placeItemsTopLeftPriority(items, startCol, startRow, areaW, areaH) {
+        const results = []; if (items.length === 0 || areaW <= 0 || areaH <= 0) return results; const totalSlots = areaW * areaH;
+        if (items.length === 1) { results.push({ imageId: items[0].id, colStart: startCol + 1, rowStart: startRow + 1, colSpan: areaW, rowSpan: areaH, remainingCount: 0 }); return results; }
+        if (items.length > totalSlots) { const placeable = items.slice(0, totalSlots), overflow = items.length - totalSlots; let idx = 0; for (let r = 0; r < areaH && idx < placeable.length; r++) { for (let c = 0; c < areaW && idx < placeable.length; c++) { results.push({ imageId: placeable[idx].id, colStart: startCol + c + 1, rowStart: startRow + r + 1, colSpan: 1, rowSpan: 1, remainingCount: idx === placeable.length - 1 ? overflow : 0 }); idx++; } } return results; }
+        if (items.length === totalSlots) { let idx = 0; for (let r = 0; r < areaH; r++) { for (let c = 0; c < areaW; c++) { results.push({ imageId: items[idx].id, colStart: startCol + c + 1, rowStart: startRow + r + 1, colSpan: 1, rowSpan: 1, remainingCount: 0 }); idx++; } } return results; }
+        const surplus = totalSlots - items.length, occupied = []; for (let r = 0; r < areaH; r++) occupied.push(new Array(areaW).fill(false)); let surplusRemaining = surplus;
+        for (let i = 0; i < items.length; i++) {
+            let placed = false;
+            for (let r = 0; r < areaH && !placed; r++) {
+                for (let c = 0; c < areaW && !placed; c++) {
+                    if (!occupied[r][c]) {
+                        let spanW = 1, spanH = 1;
+                        if (surplusRemaining > 0) {
+                            let canExpandRight = 0; for (let ec = c + 1; ec < areaW; ec++) { if (!occupied[r][ec]) canExpandRight++; else break; }
+                            let canExpandDown = 0; for (let er = r + 1; er < areaH; er++) { if (!occupied[er][c]) canExpandDown++; else break; }
+                            if (canExpandRight > 0 && surplusRemaining > 0) { const expand = Math.min(canExpandRight, surplusRemaining); spanW += expand; surplusRemaining -= expand; }
+                            if (surplusRemaining > 0 && canExpandDown > 0 && spanW > 1) { let canMakeRect = true; for (let ec = c; ec < c + spanW; ec++) { if (r + 1 >= areaH || occupied[r + 1][ec]) { canMakeRect = false; break; } } if (canMakeRect && surplusRemaining >= spanW) { spanH++; surplusRemaining -= spanW; } }
+                        }
+                        for (let or = r; or < r + spanH; or++) { for (let oc = c; oc < c + spanW; oc++) { if (or < areaH && oc < areaW) occupied[or][oc] = true; } }
+                        results.push({ imageId: items[i].id, colStart: startCol + c + 1, rowStart: startRow + r + 1, colSpan: spanW, rowSpan: spanH, remainingCount: 0 }); placed = true;
+                    }
+                }
+            }
+            if (!placed && results.length > 0) results[results.length - 1].remainingCount++;
+        } return results;
+      },
+      generateRecursive(images, cols, rows, orientation) {
+        const heroState = StateManager.heroState, dominanceRatio = StateManager.getHeroDominanceRatio(), heroes = images.filter(i => i.level === ImageLevel.S_HERO), s1List = images.filter(i => i.level === ImageLevel.S1), s2List = images.filter(i => i.level === ImageLevel.S2), details = images.filter(i => i.level === ImageLevel.S_DETAIL), mainCount = heroes.length + s1List.length + s2List.length, placements = [];
+        let mainRows = rows;
+        if (details.length > 0) { const idealDetailRows = Math.ceil(details.length / cols); let maxShare = Math.floor(rows * 0.5); if (rows > 1 && maxShare < 1) maxShare = 1; let finalDetailRows = Math.min(idealDetailRows, maxShare); if (mainCount > 0) { const minMainRows = Math.ceil(rows * 0.5), available = rows - minMainRows; finalDetailRows = Math.min(finalDetailRows, available); if (finalDetailRows < 1 && rows > 1) finalDetailRows = 1; } else { finalDetailRows = Math.min(idealDetailRows, rows); } mainRows = rows - finalDetailRows; if (finalDetailRows > 0) { const detailStartRow = mainRows + 1; this.recursiveSplit(details, 0, detailStartRow - 1, cols, finalDetailRows, placements, 'detail'); } }
+        const combinedSide = [...s1List, ...s2List], isLandscape = orientation === 'Landscape', mainSize = isLandscape ? cols : mainRows, crossSize = isLandscape ? mainRows : cols;
+        if (heroState.isHeroMode) {
+            const heroSize = Math.max(1, Math.floor(mainSize * dominanceRatio)), sideSize = mainSize - heroSize, heroStart = heroState.isHeroReversed ? (sideSize) : 0, sideStart = heroState.isHeroReversed ? 0 : (heroSize); this.placeSection(heroes, heroStart, 0, heroSize, crossSize, isLandscape, placements, 'hero');
+            if (sideSize > 0) { const canSplitCross = crossSize >= 2 && s1List.length > 0 && s2List.length > 0; if (canSplitCross) { const s1CrossSize = Math.max(1, Math.floor(crossSize * 0.5)), s2CrossSize = crossSize - s1CrossSize; this.placeSection(s1List, sideStart, 0, sideSize, s1CrossSize, isLandscape, placements, 'side'); this.placeSection(s2List, sideStart, s1CrossSize, sideSize, s2CrossSize, isLandscape, placements, 'side'); } else { this.placeSection(combinedSide, sideStart, 0, sideSize, crossSize, isLandscape, placements, 'side'); } }
+        } else { this.placeSection(combinedSide, 0, 0, mainSize, crossSize, isLandscape, placements, 'main'); }
+        placements.forEach(p => { p.colStart++; p.rowStart++; }); return { placements, gridCols: cols, gridRows: rows };
+      },
+      fillCells(items, c, r, w, h, results, section) { const capacity = w * h, take = Math.min(items.length, capacity); for (let i = 0; i < take; i++) { const rr = Math.floor(i / w), cc = i % w; results.push({ imageId: items[i].id, colStart: c + cc, rowStart: r + rr, colSpan: 1, rowSpan: 1, remainingCount: 0, section: section }); } if (items.length > capacity && take > 0) { results[results.length - 1].remainingCount = items.length - capacity; } },
+      placeSection(items, u, v, uSize, vSize, isLandscape, results, section) { if (items.length === 0) return; let realCol, realRow, realW, realH; if (isLandscape) { realCol = u; realRow = v; realW = uSize; realH = vSize; } else { realCol = v; realRow = u; realW = vSize; realH = uSize; } const capacity = realW * realH; if (items.length >= capacity) { this.fillCells(items, realCol, realRow, realW, realH, results, section); return; } this.recursiveSplit(items, realCol, realRow, realW, realH, results, section); },
+      recursiveSplit(items, c, r, w, h, results, section) {
+        if (items.length === 0 || w < 1 || h < 1) return; const capacity = w * h;
+        if (items.length > capacity) { if (w === 1 && h === 1) { results.push({ imageId: items[0].id, colStart: c, rowStart: r, colSpan: 1, rowSpan: 1, remainingCount: items.length - 1, section: section }); return; } }
+        if (items.length === 1) { results.push({ imageId: items[0].id, colStart: c, rowStart: r, colSpan: w, rowSpan: h, remainingCount: 0, section: section }); return; }
+        const splitVertically = w >= h && w > 1, countA = Math.ceil(items.length / 2);
+        if (splitVertically) { let sizeA = Math.ceil(w * (countA / items.length)); if (sizeA < 1) sizeA = 1; if (sizeA > w - 1) sizeA = w - 1; this.recursiveSplit(items.slice(0, countA), c, r, sizeA, h, results, section); this.recursiveSplit(items.slice(countA), c + sizeA, r, w - sizeA, h, results, section); }
+        else { let sizeA = Math.ceil(h * (countA / items.length)); if (sizeA < 1) sizeA = 1; if (sizeA > h - 1) sizeA = h - 1; this.recursiveSplit(items.slice(0, countA), c, r, w, sizeA, results, section); this.recursiveSplit(items.slice(countA), c, r + sizeA, w, h - sizeA, results, section); } return results;
+      }
+    };
+    const UIManager = {
+      elements: {}, viewState: { scale: 1 }, renderPending: false, debounceTimer: null, isTransitioning: false, lastClickTime: 0, clickStreak: 0, showGuides: false,
+      initialize() { 
+          this.cacheDOM(); 
+          ThemeManager.init(); 
+          this.initPaperPresets(); 
+          this.bindEvents(); 
+          this.bindPanZoomEvents(); 
+          this.bindScrollInputs(); 
+          if (typeof AiService !== 'undefined') AiService.init(); 
+          SheetManager.init(); 
+          OverviewManager.init(); 
+          HistoryManager.init(); 
+          CropManager.init(); 
+          TemplateManager.init(); 
+          HelpManager.init(); 
+          // AutoSave Initialization
+          AutoSaveManager.init(); 
+          ProjectManager.restoreAutoSave().then(() => { this.fullUpdate(); });
+          
+          this.updateHeroUI(); 
+          this.renderImageList(); 
+          this.updateToggleVisuals(); 
+          window.addEventListener('resize', () => { clearTimeout(this.resizeTimer); this.resizeTimer = setTimeout(() => this.autoGenerate(), 120); }); 
+      },
+      cacheDOM() { this.elements = { fileInput: $('fileInput'), imageListEl: $('imageList'), imageCountEl: $('imageCount'), colsInput: $('colsInput'), rowsInput: $('rowsInput'), paperSizeSelect: $('paperSizeSelect'), paperOrientationSelect: $('paperOrientationSelect'), btnOrientationToggle: $('btnOrientationToggle'), diceBtn: $('diceBtn'), addRandomMocksBtn: $('addRandomMocksBtn'), gridCanvas: $('gridCanvas'), gridOuter: $('gridOuter'), viewportWrapper: $('viewport-wrapper'), emptyState: $('emptyState'), statusText: $('statusText'), heroDominanceSelect: $('heroDominanceSelect'), heroReverseBtn: $('heroReverseBtn'), heroFlowSelect: $('heroFlowSelect'), btnHeroFlowToggle: $('btnHeroFlowToggle'), heroControls: $('heroControls'), clearAllBtn: $('clearAllBtn'), addMockBtn: $('addMockBtn'), btnPng: $('btnPng'), btnPdf: $('btnPdf'), layoutInfo: $('layoutInfo'), gapSlider: $('gapSlider'), gapValue: $('gapValue'), marginSlider: $('marginSlider'), marginValue: $('marginValue'), canvasMetaLayer: $('canvasMetaLayer'), gridContentArea: $('gridContentArea'), metaTL: $('metaTL'), metaTR: $('metaTR'), metaBL: $('metaBL'), metaBR: $('metaBR'), undoBtn: $('undoBtn'), redoBtn: $('redoBtn'), aiHeader: $('aiHeader'), aiBody: $('aiBody'), aiChevron: $('aiChevron'), aiSettingsToggle: $('aiSettingsToggle'), btnAiGenerate: $('btnAiGenerate'), aiPrompt: $('aiPrompt'), aiErrorMsg: $('aiErrorMsg'), selectionModal: $('selectionModal'), selectionGrid: $('selectionGrid'), closeSelectionBtn: $('closeSelectionBtn'), layoutSettingsToggle: $('layoutSettingsToggle'), advancedLayoutSettings: $('advancedLayoutSettings'), fontSizeInput: $('fontSizeInput'), lineHeightInput: $('lineHeightInput'), btnAlgoV5: $('btnAlgoV5'), btnAlgoV4: $('btnAlgoV4'), algoInput: $('algoInput'), btnSaveProject: $('btnSaveProject'), btnLoadProject: $('btnLoadProject'), gridGuideOverlay: $('gridGuideOverlay'), toggleGuidesBtn: $('toggleGuidesBtn') }; },
+      initPaperPresets() { const select = $('paperSizeSelect'); if(!select) return; select.innerHTML = Object.keys(PAPER_PRESETS).map(key => `<option value="${key}">${PAPER_PRESETS[key].label}</option>`).join(''); },
+      updateAlgoUI(mode) { const v5 = this.elements.btnAlgoV5, v4 = this.elements.btnAlgoV4; if (mode === 'v4') { v4.classList.remove('bg-paper', 'text-graphite'); v4.classList.add('bg-ink', 'text-paper'); v5.classList.remove('bg-ink', 'text-paper'); v5.classList.add('bg-paper', 'text-graphite'); } else { v5.classList.remove('bg-paper', 'text-graphite'); v5.classList.add('bg-ink', 'text-paper'); v4.classList.remove('bg-ink', 'text-paper'); v4.classList.add('bg-paper', 'text-graphite'); } },
+      bindEvents() {
+        const els = this.elements; document.querySelectorAll('.sheet-tab').forEach(btn => btn.addEventListener('click', (e) => SheetManager.switchSheet(parseInt(e.target.dataset.idx))));
+        if(els.fileInput) els.fileInput.addEventListener('change', (e) => { if (e.target.files.length) { StateManager.addImages(Array.from(e.target.files)); } e.target.value = ''; });
+        const safeUpdate = () => { this.autoGenerate(); }, debouncedAutoGenerate = () => { clearTimeout(this.debounceTimer); this.debounceTimer = setTimeout(() => this.autoGenerate(), 30); };
+        if(els.gapSlider) { els.gapSlider.addEventListener('input', (e) => { els.gapValue.textContent = `${e.target.value}px`; const grid = els.gridContentArea.querySelector('.grid-container'); if(grid) grid.style.gap = `${e.target.value * CURRENT_SCALE}px`; if(this.showGuides) this.renderGuides(); }); els.gapSlider.addEventListener('change', () => { this.autoGenerate(); HistoryManager.pushState(); }); }
+        if(els.marginSlider) { els.marginSlider.addEventListener('input', (e) => { els.marginValue.textContent = `${e.target.value}px`; els.gridContentArea.style.padding = `${e.target.value * CURRENT_SCALE}px`; this.renderCanvasMeta({ tl: els.metaTL.value, tr: els.metaTR.value, bl: els.metaBL.value, br: els.metaBR.value }, e.target.value * CURRENT_SCALE); if(this.showGuides) this.renderGuides(); }); els.marginSlider.addEventListener('change', () => { this.autoGenerate(); HistoryManager.pushState(); }); }
+        if(els.fontSizeInput) { els.fontSizeInput.addEventListener('input', debouncedAutoGenerate); els.fontSizeInput.addEventListener('change', () => HistoryManager.pushState()); } if(els.lineHeightInput) { els.lineHeightInput.addEventListener('input', debouncedAutoGenerate); els.lineHeightInput.addEventListener('change', () => HistoryManager.pushState()); }
+        if(els.btnAlgoV5) { els.btnAlgoV5.addEventListener('click', () => { els.algoInput.value = 'v5'; this.updateAlgoUI('v5'); this.fullUpdate(); }); } if(els.btnAlgoV4) { els.btnAlgoV4.addEventListener('click', () => { els.algoInput.value = 'v4'; this.updateAlgoUI('v4'); this.fullUpdate(); }); }
+        [els.metaTL, els.metaTR, els.metaBL, els.metaBR].forEach(el => { if(el) { el.addEventListener('input', debouncedAutoGenerate); el.addEventListener('change', () => HistoryManager.pushState()); } });
+        [els.colsInput, els.rowsInput].forEach(el => { if(el) { el.addEventListener('input', debouncedAutoGenerate); el.addEventListener('change', () => HistoryManager.pushState()); } });
+        document.body.addEventListener('dragover', e => e.preventDefault()); document.body.addEventListener('drop', (e) => { e.preventDefault(); const files = Array.from(e.dataTransfer?.files||[]).filter(f=>/^image\//.test(f.type) || /^video\//.test(f.type)); if(files.length){ StateManager.addImages(files); } });
+        if(els.addRandomMocksBtn) { els.addRandomMocksBtn.addEventListener('click', () => { StateManager.clearAllImages(); StateManager.addRandomMocks(); this.fullUpdate(); }); }
+        if(this.elements.btnSaveProject) this.elements.btnSaveProject.addEventListener('click', () => ProjectManager.save());
+        if(this.elements.btnLoadProject) { const inp = $('loadProjectInput'); if(inp) { inp.addEventListener('change', (e) => { if(e.target.files.length) ProjectManager.load(e.target.files[0]); e.target.value = ''; }); } }
+        if(els.btnPdf) els.btnPdf.addEventListener('click', () => ExportManager.downloadAllSheetsPDF());
+        if(els.clearAllBtn) els.clearAllBtn.addEventListener('click', () => { StateManager.clearAllImages(); this.fullUpdate(); });
+        if(els.addMockBtn) els.addMockBtn.addEventListener('click', () => { const now = Date.now(); if (now - this.lastClickTime < 400) { this.clickStreak = Math.min(this.clickStreak + 1, 5); } else { this.clickStreak = 0; } this.lastClickTime = now; StateManager.addMock(); this.fullUpdate(); });
+        if(els.heroDominanceSelect) els.heroDominanceSelect.addEventListener('change', () => { StateManager.updateHeroState(); safeUpdate(); });
+        if(els.heroReverseBtn) els.heroReverseBtn.addEventListener('click', () => { StateManager.toggleHeroReverse(); safeUpdate(); });
+        if(els.btnOrientationToggle) { els.btnOrientationToggle.addEventListener('click', () => { const current = els.paperOrientationSelect.value, next = current === 'portrait' ? 'landscape' : 'portrait'; els.paperOrientationSelect.value = next; this.fullUpdate(); }); }
+        if(els.btnHeroFlowToggle) { els.btnHeroFlowToggle.addEventListener('click', () => { const current = els.heroFlowSelect.value, next = current === 'Landscape' ? 'Portrait' : 'Landscape'; els.heroFlowSelect.value = next; StateManager.updateHeroState(); this.fullUpdate(); }); }
+        if (els.layoutSettingsToggle && els.advancedLayoutSettings) { els.layoutSettingsToggle.addEventListener('click', () => { els.advancedLayoutSettings.classList.toggle('hidden'); }); }
+        if(els.paperSizeSelect) els.paperSizeSelect.addEventListener('change', safeUpdate);
+        if(els.btnPng) els.btnPng.addEventListener('click', () => ExportManager.downloadPNG());
+        if(els.diceBtn) els.diceBtn.addEventListener('click', () => { StateManager.shuffleImages(); this.fullUpdate(); });
+        if(els.undoBtn) els.undoBtn.addEventListener('click', () => HistoryManager.undo()); if(els.redoBtn) els.redoBtn.addEventListener('click', () => HistoryManager.redo());
+        if(els.closeSelectionBtn) els.closeSelectionBtn.addEventListener('click', () => { els.selectionModal.classList.add('hidden'); });
+        if(els.toggleGuidesBtn) els.toggleGuidesBtn.addEventListener('click', () => this.toggleGuides());
+        document.addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'z') { e.preventDefault(); HistoryManager.undo(); }
+            if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.shiftKey && e.key === 'Z'))) { e.preventDefault(); HistoryManager.redo(); }
+            if (e.key.toLowerCase() === 'o' && !['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) { OverviewManager.toggle(); }
+            if (e.shiftKey && e.key.toLowerCase() === 'g' && !['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) { e.preventDefault(); this.toggleGuides(); }
+        });
+        if (els.aiHeader) { els.aiHeader.addEventListener('click', () => { const isHidden = els.aiBody.classList.toggle('hidden'); els.aiChevron.classList.toggle('-rotate-90', isHidden); }); }
+        if(els.btnAiGenerate) els.btnAiGenerate.addEventListener('click', async () => { const prompt = els.aiPrompt.value.trim(); if (!prompt) return; const btn = els.btnAiGenerate, originalText = $('aiBtnText').innerText; btn.disabled = true; $('aiBtnText').innerHTML = '<span class="ai-spinner"></span> Thinking...'; els.aiErrorMsg.classList.add('hidden'); try { const layoutPlan = await AiService.generateLayout(prompt); if (Array.isArray(layoutPlan)) { StateManager.addAiMocks(layoutPlan); this.fullUpdate(); } else { throw new Error("Invalid AI format"); } } catch (e) { els.aiErrorMsg.textContent = e.message; els.aiErrorMsg.classList.remove('hidden'); $('aiSettingsPanel').classList.remove('hidden'); } finally { btn.disabled = false; $('aiBtnText').innerText = originalText; } });
+        const imageListContainer = els.imageListEl;
+        if(imageListContainer) {
+            imageListContainer.addEventListener('mouseover', (e) => { const row = e.target.closest('.img-row'); if (row) { const id = row.dataset.id, cell = document.querySelector(`.grid-cell[data-id="${id}"]`); if (cell) { const img = StateManager.images.find(i => i.id === id); if(img) { if(img.isMock) cell.classList.add('hover-active-mock'); else cell.classList.add('hover-active-img'); } } } });
+            imageListContainer.addEventListener('mouseout', (e) => { const row = e.target.closest('.img-row'); if (row) { const id = row.dataset.id, cell = document.querySelector(`.grid-cell[data-id="${id}"]`); if (cell) { cell.classList.remove('hover-active-mock'); cell.classList.remove('hover-active-img'); } } });
+            imageListContainer.addEventListener('click', (e) => {
+                const target = e.target, row = target.closest('.img-row'); if (!row) return; const id = row.dataset.id;
+                if (target.classList.contains('btn-level')) { if (target.dataset.isBlankToggle === "true") { const img = StateManager.images.find(i => i.id === id); if (img) StateManager.updateImageBlank(id, !img.isBlank); } else { StateManager.updateImageLevel(id, target.dataset.val); } this.fullUpdate(); return; }
+                if (target.closest('.remove-btn')) { StateManager.removeImage(id); this.fullUpdate(); return; }
+                if (target.closest('.crop-btn')) { const img = StateManager.images.find(i => i.id === id); if (img) { const cell = document.querySelector(`.grid-cell[data-id="${id}"]`); let aspectRatio = null; if (cell) { const c = cell.querySelector('.flex-1'); if (c) aspectRatio = c.clientWidth / c.clientHeight; } CropManager.open(id, img.url, aspectRatio); } return; }
+                if (target.closest('.btn-render')) { const btn = target.closest('.btn-render'), img = StateManager.images.find(i => i.id === id); if(img && img.text) { const originalText = btn.innerHTML; btn.disabled = true; btn.innerHTML = `<span class="ai-spinner border-gray-400" style="width:10px;height:10px;"></span>`; (async () => { try { const urls = await AiService.generateImage(img.text); if (urls.length === 1) { StateManager.replaceImageWithUrl(id, urls[0]); UIManager.fullUpdate(); } else if (urls.length > 1) { this.showSelectionModal(id, urls); } } catch(err) { alert("Render Error: " + err.message); } finally { btn.disabled = false; btn.innerHTML = originalText; } })(); } else { alert("Add description first."); } return; }
+            });
+            imageListContainer.addEventListener('input', (e) => { if (e.target.classList.contains('text-input')) { const row = e.target.closest('.img-row'); if (row) { StateManager.updateImageText(row.dataset.id, e.target.value); clearTimeout(this.textInputTimer); this.textInputTimer = setTimeout(() => this.autoGenerate(), 70); } } }); imageListContainer.addEventListener('change', (e) => { if (e.target.classList.contains('text-input')) { HistoryManager.pushState(); } });
+        }
+      },
+      bindScrollInputs() { const attach = (id) => { const el = $(id); if(!el) return; el.addEventListener('wheel', (e) => { e.preventDefault(); const delta = Math.sign(e.deltaY) * -1; let step = parseFloat(el.step) || 1, val = parseFloat(el.value) || 0; val += delta * step; if (el.min) val = Math.max(parseFloat(el.min), val); if (el.max) val = Math.min(parseFloat(el.max), val); el.value = val; el.dispatchEvent(new Event('input')); el.dispatchEvent(new Event('change')); }, { passive: false }); }; attach('colsInput'); attach('rowsInput'); attach('fontSizeInput'); attach('lineHeightInput'); },
+      updateToggleVisuals() {
+          const els = this.elements, orient = els.paperOrientationSelect.value, orientIcon = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="3" width="6" height="10" rx="1" fill="${orient==='portrait' ? 'currentColor' : 'none'}" /><rect x="11" y="11" width="10" height="6" rx="1" fill="${orient==='landscape' ? 'currentColor' : 'none'}" /></svg>`; if(els.btnOrientationToggle) els.btnOrientationToggle.innerHTML = orientIcon;
+          const flow = els.heroFlowSelect.value; if(els.btnHeroFlowToggle) { if (flow === 'Landscape') { els.btnHeroFlowToggle.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="12" y1="3" x2="12" y2="21"/></svg>`; els.btnHeroFlowToggle.title = "Flow: Vertical Split"; } else { els.btnHeroFlowToggle.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="12" x2="21" y2="12"/></svg>`; els.btnHeroFlowToggle.title = "Flow: Horizontal Split"; } }
+      },
+      bindPanZoomEvents() { const wrapper = this.elements.viewportWrapper; if (!wrapper) return; wrapper.addEventListener('wheel', (e) => { if(OverviewManager.isOverviewMode) return; if (e.ctrlKey || e.metaKey || true) { e.preventDefault(); const newScale = this.viewState.scale - e.deltaY * 0.001; this.viewState.scale = Math.min(Math.max(0.1, newScale), 5); this.updateViewTransform(); if(this.showGuides) this.renderGuides(); } }, { passive: false }); wrapper.addEventListener('dblclick', () => { if(!OverviewManager.isOverviewMode) this.resetView(); }); },
+      updateViewTransform() { if (this.elements.gridOuter && !OverviewManager.isOverviewMode) this.elements.gridOuter.style.transform = `scale(${this.viewState.scale})`; },
+      resetView() { this.viewState.scale = 1; this.updateViewTransform(); if(this.showGuides) this.renderGuides(); },
+      fullUpdate(saveToHistory = true) {
+        if(this.renderPending) return; this.renderPending = true;
+        const updateOp = () => { this.renderImageList(); this.updateHeroUI(); this.updateToggleVisuals(); this.autoGenerate(); this.elements.imageCountEl.textContent = StateManager.images.length.toString().padStart(2, '0'); if(OverviewManager.isOverviewMode) OverviewManager.render(); this.renderPending = false; };
+        if (document.startViewTransition && StateManager.images.length < 30) { document.startViewTransition(() => { updateOp(); }); } else { updateOp(); } if (saveToHistory) { HistoryManager.pushState(); }
+      },
+      renderImageList() {
+        const el = this.elements.imageListEl, images = StateManager.getSortedImages(); if (!images.length) { el.innerHTML = '<div class="p-8 text-center text-gray-400"><p class="text-[10px] font-mono">No items</p></div>'; return; } el.innerHTML = images.map(img => this.createImageRow(img)).join('');
+      },
+      createImageRow(img) {
+        const isHero = img.level === ImageLevel.S_HERO; let imgDisplay; if (img.isMock) imgDisplay = `<div class="w-full h-full bg-highlight flex flex-col items-center justify-center text-[8px] text-gray-400 font-mono border border-dashed border-line"><span>MOCK</span></div>`; else if (img.isVideo) imgDisplay = `<video src="${img.url}" class="w-full h-full object-cover" autoplay loop muted playsinline></video>`; else imgDisplay = `<img src="${img.url}" class="w-full h-full object-cover" loading="lazy">`;
+        const levels = [ { val: 'S_HERO', label: 'H' }, { val: 'S1', label: '1' }, { val: 'S2', label: '2' }, { val: 'S_DETAIL', label: 'D' } ]; let buttonsHtml = levels.map(l => `<button class="btn-level flex-1 ${(img.level === l.val && !img.isBlank) ? 'active' : ''}" data-val="${l.val}">${l.label}</button>`).join(''); buttonsHtml += `<button class="btn-level flex-1 ${img.isBlank ? 'active' : ''}" data-val="S_BLANK" data-is-blank-toggle="true">B</button>`;
+        return `<div class="img-row group p-2 flex items-start space-x-2 bg-paper hover:bg-highlight transition border-l-2 ${isHero ? 'border-blue-500' : 'border-transparent'}" data-id="${img.id}"><div class="w-12 h-12 bg-highlight rounded-sm overflow-hidden shrink-0 shadow-sm border border-line relative ${img.isBlank ? 'opacity-25' : ''}">${imgDisplay}${!img.isMock && !img.isVideo ? `<button class="crop-btn absolute bottom-0 right-0 bg-black/50 text-white w-4 h-4 flex items-center justify-center hover:bg-blue-600 transition text-[7px]">✂️</button>` : ''}${img.isProcessing ? `<div class="absolute inset-0 bg-black/50 flex items-center justify-center"><div class="loader-spinner !w-4 !h-4 !border-2"></div></div>` : ''}</div><div class="flex-1 min-w-0 flex flex-col h-full justify-between space-y-1"><div class="flex items-center space-x-2"><div class="flex-1 flex rounded-sm overflow-hidden border border-line h-5">${buttonsHtml}</div><button class="btn-render w-5 h-5 flex items-center justify-center bg-highlight hover:bg-ink hover:text-paper text-graphite rounded transition" title="AI Render">🎨</button><button class="remove-btn w-5 h-5 flex items-center justify-center text-gray-300 hover:text-red-500 hover:bg-red-50 rounded transition">✕</button></div><textarea rows="2" placeholder="Caption..." class="text-input w-full text-[9px] px-1.5 py-1 border border-line focus:border-ink resize-none leading-tight rounded-sm bg-highlight focus:bg-paper transition text-ink">${img.text || ""}</textarea></div></div>`;
+      },
+      updateHeroUI() { const el = this.elements.heroControls; if(StateManager.heroState.isHeroMode) el.classList.remove('hidden'); else el.classList.add('hidden'); },
+      toggleGuides() {
+          this.showGuides = !this.showGuides;
+          this.elements.toggleGuidesBtn.classList.toggle('active', this.showGuides);
+          this.elements.gridGuideOverlay.classList.toggle('hidden', !this.showGuides);
+          if (this.showGuides) this.renderGuides();
+      },
+      // --- Enhanced Guide Rendering ---
+      renderGuides() {
+          const svg = this.elements.gridGuideOverlay;
+          if (!this.showGuides) return;
+          const canvasW = this.elements.gridCanvas.clientWidth, canvasH = this.elements.gridCanvas.clientHeight;
+          const cols = parseInt(this.elements.colsInput.value)||8, rows = parseInt(this.elements.rowsInput.value)||5;
+          const margin = parseInt(this.elements.marginSlider.value) * CURRENT_SCALE, gap = parseInt(this.elements.gapSlider.value) * CURRENT_SCALE;
+          
+          let svgContent = '';
+          const viewScale = this.viewState.scale;
+          const strokeW = Math.max(0.5, (1 * CURRENT_SCALE) / viewScale); 
+          
+          const isDark = document.documentElement.classList.contains('dark');
+          const colorMargin = isDark ? '#e879f9' : '#a855f7'; 
+          const colorGrid = isDark ? '#22d3ee' : '#06b6d4';   
+          
+          // Margin Box
+          svgContent += `<rect x="${margin}" y="${margin}" width="${canvasW - margin*2}" height="${canvasH - margin*2}" fill="none" stroke="${colorMargin}" stroke-width="${strokeW}" opacity="0.8" />`;
+          
+          const availableW = canvasW - (margin * 2), availableH = canvasH - (margin * 2);
+          const cellW = (availableW - (cols - 1) * gap) / cols, cellH = (availableH - (rows - 1) * gap) / rows;
+          
+          // Grid Cells
+          for (let c = 0; c < cols; c++) {
+              const xStart = margin + c * (cellW + gap);
+              for (let r = 0; r < rows; r++) {
+                  const yStart = margin + r * (cellH + gap);
+                  svgContent += `<rect x="${xStart}" y="${yStart}" width="${cellW}" height="${cellH}" fill="none" stroke="${colorGrid}" stroke-width="${strokeW}" opacity="0.75" />`;
+              }
+              if (c < cols - 1) {
+                  const gapCenterX = xStart + cellW + gap/2;
+                  svgContent += `<line x1="${gapCenterX}" y1="${margin}" x2="${gapCenterX}" y2="${canvasH-margin}" stroke="${colorGrid}" stroke-width="${strokeW}" stroke-dasharray="${strokeW*2},${strokeW*2}" opacity="0.5" />`;
+              }
+          }
+          for (let r = 0; r < rows - 1; r++) {
+                const yStart = margin + r * (cellH + gap);
+                const gapCenterY = yStart + cellH + gap/2;
+                svgContent += `<line x1="${margin}" y1="${gapCenterY}" x2="${canvasW-margin}" y2="${gapCenterY}" stroke="${colorGrid}" stroke-width="${strokeW}" stroke-dasharray="${strokeW*2},${strokeW*2}" opacity="0.5" />`;
+          }
+          
+          svg.innerHTML = svgContent;
+      },
+      autoGenerate(overrideScale = null) {
+        const cols = parseInt(this.elements.colsInput.value)||8, rows = parseInt(this.elements.rowsInput.value)||5, paper = this.elements.paperSizeSelect.value || 'A1', paperOrient = this.elements.paperOrientationSelect.value || 'portrait', flow = this.elements.heroFlowSelect ? this.elements.heroFlowSelect.value : 'Landscape', rawMargin = parseInt(this.elements.marginSlider.value), marginPx = isNaN(rawMargin) ? 5 : rawMargin, rawGap = parseInt(this.elements.gapSlider.value), currentGap = isNaN(rawGap) ? 2 : rawGap, fontSz = parseFloat(this.elements.fontSizeInput.value), lineH = parseFloat(this.elements.lineHeightInput.value), paperConfig = PAPER_PRESETS[paper] || PAPER_PRESETS['A1'];
+        let targetRatio = paperConfig.w / paperConfig.h; if(paperOrient === 'landscape') targetRatio = 1 / targetRatio;
+        const wrapper = this.elements.viewportWrapper; if (!wrapper) return; const availW = wrapper.clientWidth - 64, availH = wrapper.clientHeight - 64; let viewW, viewH; if (availW / targetRatio <= availH) { viewW = availW; viewH = availW / targetRatio; } else { viewH = availH; viewW = viewH * targetRatio; }
+        const rawPixels = viewW * viewH, maxSafeScale = Math.sqrt(MAX_CANVAS_PIXELS / rawPixels);
+        if (overrideScale) { CURRENT_SCALE = overrideScale; } else { CURRENT_SCALE = Math.min(3, maxSafeScale); }
+        const isExport = !!overrideScale;
+        this.elements.gridOuter.style.width = `${viewW}px`; this.elements.gridOuter.style.height = `${viewH}px`;
+        const highResW = Math.floor(viewW * CURRENT_SCALE), highResH = Math.floor(viewH * CURRENT_SCALE);
+        this.elements.gridCanvas.style.width = `${highResW}px`; this.elements.gridCanvas.style.height = `${highResH}px`; this.elements.gridCanvas.style.transform = `scale(${1/CURRENT_SCALE})`;
+        const metaValues = { tl: this.elements.metaTL.value, tr: this.elements.metaTR.value, bl: this.elements.metaBL.value, br: this.elements.metaBR.value };
+        let dynamicMinCell = 12; if (cols > 16) dynamicMinCell = 8; if (cols > 24) dynamicMinCell = 4;
+        const MIN_CELL_SIZE_PX = dynamicMinCell, minContentW = cols * (MIN_CELL_SIZE_PX * CURRENT_SCALE), minContentH = rows * (MIN_CELL_SIZE_PX * CURRENT_SCALE);
+        if (minContentW > highResW || minContentH > highResH) { const reason = minContentW > highResW ? 'WIDTH' : 'HEIGHT'; this.renderBurstState(reason, StateManager.images.length); this.elements.canvasMetaLayer.style.display = 'none'; this.elements.layoutInfo.textContent = `Grid:${cols}x${rows} | BURST`; this.elements.layoutInfo.classList.add('text-red-500', 'font-bold'); this.elements.statusText.textContent = `LAYOUT CRITICAL`; return; }
+        const pixelDims = { w: highResW, h: highResH, margin: marginPx * CURRENT_SCALE, gap: currentGap * CURRENT_SCALE };
+        if (!StateManager.images.length) { this.elements.emptyState.style.display = 'flex'; const c = this.elements.gridContentArea.querySelector('.grid-container'); if(c) c.remove(); this.elements.statusText.textContent = `SHEET: EMPTY`; this.elements.layoutInfo.textContent = `Grid:${cols}x${rows} | Empty`; this.elements.layoutInfo.classList.remove('text-red-500', 'font-bold'); this.elements.gridContentArea.style.padding = `${marginPx * CURRENT_SCALE}px`; this.renderCanvasMeta(metaValues, marginPx * CURRENT_SCALE); if(this.showGuides && !isExport) this.renderGuides(); else this.elements.gridGuideOverlay.innerHTML = ''; return; }
+        this.elements.emptyState.style.display = 'none'; const sortedImages = StateManager.getSortedImages(), layout = LayoutGenerator.generate(sortedImages, cols, rows, flow, pixelDims);
+        let finalGap = currentGap * CURRENT_SCALE, finalMargin = marginPx * CURRENT_SCALE; if (layout.adjustedGap !== undefined) finalGap = layout.adjustedGap; if (layout.adjustedMargin !== undefined) finalMargin = layout.adjustedMargin;
+        this.elements.gridContentArea.style.padding = `${finalMargin}px`; this.renderCanvasMeta(metaValues, finalMargin); this.renderGrid(layout, finalGap, fontSz, lineH, isExport);
+        
+        // Render Guides if Enabled and NOT exporting
+        if (this.showGuides && !isExport) this.renderGuides(); else this.elements.gridGuideOverlay.innerHTML = '';
+        
+        this.elements.statusText.textContent = `SHEET: ${layout.placements.length} BLOCKS`;
+        const isFull = StateManager.images.length > cols*rows; let info = [`Grid:${cols}x${rows}`]; if (finalGap < (currentGap * CURRENT_SCALE) || finalMargin < (marginPx * CURRENT_SCALE)) { info.push(`AUTO-FIT`); this.elements.layoutInfo.classList.add('text-orange-500'); } else { this.elements.layoutInfo.classList.remove('text-orange-500'); } if (isFull) { info.push(`OVERFLOW`); this.elements.layoutInfo.classList.add('text-red-500', 'font-bold'); } this.elements.layoutInfo.textContent = info.join(' | ');
+      },
+      renderBurstState(reason, count) {
+          const oldGrid = this.elements.gridContentArea.querySelector('.grid-container'); if (oldGrid) oldGrid.remove(); this.elements.emptyState.style.display = 'none'; let burstEl = $('burstState');
+          if (!burstEl) { burstEl = document.createElement('div'); burstEl.id = 'burstState'; burstEl.className = 'absolute inset-0 flex flex-col items-center justify-center bg-gray-900 text-white z-50 p-4 text-center'; this.elements.gridContentArea.appendChild(burstEl); }
+          burstEl.style.display = 'flex'; const fontSize = 12 * CURRENT_SCALE; burstEl.innerHTML = `<div style="font-size: ${fontSize*2}px; font-weight: bold; margin-bottom: ${fontSize}px;">+${count}</div><div style="font-size: ${fontSize/2}px; font-family: monospace; color: #9ca3af;">GRID BURST (${reason})</div><div style="font-size: ${fontSize/3}px; margin-top: ${fontSize/2}px; color: #6b7280;">REDUCE GAP/MARGIN OR COLS/ROWS</div>`;
+      },
+      renderCanvasMeta(values, scaledMargin) {
+        const layer = this.elements.canvasMetaLayer, burstEl = $('burstState'); if(burstEl) burstEl.style.display = 'none'; if ((scaledMargin / CURRENT_SCALE) < 9) { layer.style.display = 'none'; return; }
+        layer.style.display = 'block'; const inset = Math.max(0, Math.min(Math.round(scaledMargin * 0.6), 36 * CURRENT_SCALE) - 2 * CURRENT_SCALE), fs = 3 * CURRENT_SCALE, lh = 4 * CURRENT_SCALE;
+        layer.innerHTML = `<div class="absolute swiss-text text-black" style="top:${inset}px; left:${inset}px; font-size:${fs}px; line-height:${lh}px;">${values.tl}</div><div class="absolute swiss-text text-black text-right" style="top:${inset}px; right:${inset}px; font-size:${fs}px; line-height:${lh}px;">${values.tr}</div><div class="absolute swiss-text text-black" style="bottom:${inset}px; left:${inset}px; font-size:${fs}px; line-height:${lh}px;">${values.bl}</div><div class="absolute swiss-text text-black text-right" style="bottom:${inset}px; right:${inset}px; font-size:${fs}px; line-height:${lh}px;">${values.br}</div>`;
+      },
+      renderGrid(layout, safeGap, fontSize, lineHeight, isExport = false) {
+        let grid = this.elements.gridContentArea.querySelector('.grid-container'); if (!grid) { grid = document.createElement('div'); grid.className = 'grid-container'; grid.style.display = 'grid'; grid.style.width = '100%'; grid.style.height = '100%'; grid.style.backgroundColor = 'transparent'; this.elements.gridContentArea.appendChild(grid); }
+        grid.style.gridTemplateColumns = `repeat(${layout.gridCols}, 1fr)`; grid.style.gridTemplateRows = `repeat(${layout.gridRows}, 1fr)`; grid.style.gap = `${safeGap}px`;
+        const existingCells = new Map(); grid.querySelectorAll('.grid-cell').forEach(el => existingCells.set(el.dataset.id, el)); const activeIds = new Set();
+        layout.placements.forEach(p => {
+            const img = StateManager.images.find(i => i.id === p.imageId); if (!img) return; activeIds.add(p.imageId); let cell = existingCells.get(p.imageId);
+            if (cell) {
+                cell.style.gridColumn = `${p.colStart} / span ${p.colSpan}`; cell.style.gridRow = `${p.rowStart} / span ${p.rowSpan}`; cell.style.viewTransitionName = `cell-${img.id}`;
+                const cachedFs = parseFloat(cell.dataset.fs || 0), cachedLh = parseFloat(cell.dataset.lh || 0), cachedCount = parseInt(cell.dataset.remainingCount || 0);
+                if (parseInt(cell.dataset.version) !== img.version || cachedFs !== fontSize || cachedLh !== lineHeight || cachedCount !== p.remainingCount || isExport) { this.updateGridCellContent(cell, img, p, fontSize, lineHeight, isExport); }
+            } else {
+                cell = document.createElement('div'); cell.dataset.id = img.id;
+                if (!isExport) { cell.classList.add('cell-enter-anim'); if (img.isMock) { const baseSpeed = 0.15, speedup = (this.clickStreak || 0) * 0.025, finalSpeed = Math.max(0.05, baseSpeed - speedup); cell.style.setProperty('--enter-duration', `${finalSpeed}s`); } }
+                cell.style.viewTransitionName = `cell-${img.id}`; this.updateGridCellContent(cell, img, p, fontSize, lineHeight, isExport); this.bindDragEvents(cell); grid.appendChild(cell);
+            }
+        });
+        existingCells.forEach((el, id) => { if (!activeIds.has(id)) el.remove(); });
+      },
+      updateGridCellContent(cell, img, placement, fontSize, lineHeight, isExport = false) {
+        cell.dataset.version = img.version; cell.dataset.fs = fontSize; cell.dataset.lh = lineHeight; cell.dataset.remainingCount = placement.remainingCount; cell.style.gridColumn = `${placement.colStart} / span ${placement.colSpan}`; cell.style.gridRow = `${placement.rowStart} / span ${placement.rowSpan}`;
+        const isHero = img.level === ImageLevel.S_HERO, isBlank = img.isBlank, exportBg = isExport ? 'bg-transparent' : 'bg-white', baseClass = `grid-cell flex flex-col group ${isBlank ? 'bg-white is-blank relative' : (img.isMock ? 'bg-gray-50 relative' : (isHero ? 'relative '+exportBg : 'relative '+exportBg))}`, existingAnim = (!isExport && cell.classList.contains('cell-enter-anim')) ? 'cell-enter-anim' : '';
+        cell.className = `${baseClass} ${existingAnim}`; if (isExport) { cell.style.transition = 'none'; cell.style.animation = 'none'; cell.style.opacity = '1'; } else { cell.style.transition = ''; cell.style.animation = ''; cell.style.opacity = ''; } cell.draggable = true;
+        const fs = (fontSize || 4) * CURRENT_SCALE, lh = (lineHeight || 5) * CURRENT_SCALE;
+        if (isBlank) { cell.innerHTML = `<div class="absolute inset-0 p-2 overflow-hidden break-words whitespace-pre-wrap font-mono text-gray-800 leading-tight pointer-events-none text-left" style="font-size:${fs}px; line-height:${lh}px;">${img.text || ""}</div>`; return; }
+        let imageLayer = ''; if (img.isMock) { imageLayer = `<div class="mock-fill flex-1 w-full min-h-0 relative flex items-center justify-center pointer-events-none bg-gray-100 border-b border-gray-100 transition-colors duration-200"><span class="text-[20px] font-mono text-gray-300">MOCK</span></div>`; } else if (img.isVideo) { imageLayer = `<div class="flex-1 w-full min-h-0 relative bg-black pointer-events-none overflow-hidden"><video src="${img.url}" class="absolute inset-0 w-full h-full object-cover" autoplay loop muted playsinline></video></div>`; } else { imageLayer = `<div class="flex-1 w-full min-h-0 bg-cover bg-center bg-no-repeat pointer-events-none" style="background-image: url('${img.url}');"></div>`; }
+        let textLayer = ''; if (img.text && img.text.trim().length > 0) { const lines = img.text.split('\n'); let styledText = `<span class="font-bold">${lines[0]}</span>`; if (lines.length > 1) styledText += `\n<span class="font-normal">${lines.slice(1).join('\n')}</span>`; const padTop = 0, padBottom = 2 * CURRENT_SCALE; textLayer = `<div class="w-full bg-white pointer-events-none shrink-0 relative z-10" style="padding:${padTop}px 0 ${padBottom}px; margin-top:-${CURRENT_SCALE}px;"><p class="swiss-text text-black uppercase whitespace-pre-wrap break-words" style="font-size:${fs}px; line-height:${lh}px; margin:0; width:100%;">${styledText}</p></div>`; }
+        let overflowBadge = ''; if (placement.remainingCount > 0) { const badgeSize = Math.max(12 * CURRENT_SCALE, 24); overflowBadge = `<div class="overflow-badge" style="position:absolute; bottom:${8*CURRENT_SCALE}px; right:${8*CURRENT_SCALE}px; background:rgba(0,0,0,0.75); color:white; padding:${4*CURRENT_SCALE}px ${8*CURRENT_SCALE}px; border-radius:${4*CURRENT_SCALE}px; font-size:${badgeSize}px; font-weight:bold; pointer-events:none; z-index:30;">+${placement.remainingCount}</div>`; }
+        cell.innerHTML = imageLayer + textLayer + overflowBadge;
+      },
+      bindDragEvents(cell) {
+        cell.addEventListener('dragstart', (e) => { cell.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', cell.dataset.id); }); cell.addEventListener('dragend', () => { cell.classList.remove('dragging'); document.querySelectorAll('.grid-cell').forEach(c => c.classList.remove('drag-over')); }); cell.addEventListener('dragenter', (e) => { e.preventDefault(); if (!cell.classList.contains('dragging')) { cell.classList.add('drag-over'); } }); cell.addEventListener('dragover', (e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }); cell.addEventListener('dragleave', (e) => { if (!cell.contains(e.relatedTarget)) { cell.classList.remove('drag-over'); } });
+        cell.addEventListener('drop', (e) => { e.preventDefault(); e.stopPropagation(); cell.classList.remove('drag-over'); const targetId = cell.dataset.id, files = Array.from(e.dataTransfer?.files || []).filter(f => /^image\//.test(f.type) || /^video\//.test(f.type)); if (files.length > 0) { StateManager.distributeFiles(targetId, files); return; } const sourceId = e.dataTransfer.getData('text/plain'); if (sourceId && sourceId !== targetId) { if (StateManager.swapImages(sourceId, targetId)) UIManager.fullUpdate(); } });
+        cell.addEventListener('mouseenter', () => { const id = cell.dataset.id, row = document.querySelector(`.img-row[data-id="${id}"]`); if (row) { row.classList.add('highlight-from-grid'); row.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); } }); cell.addEventListener('mouseleave', () => { const id = cell.dataset.id, row = document.querySelector(`.img-row[data-id="${id}"]`); if (row) { row.classList.remove('highlight-from-grid'); } }); cell.addEventListener('dblclick', (e) => { e.preventDefault(); });
+      },
+      openSelectionModal(targetId) {
+        const modal = this.elements.selectionModal, grid = this.elements.selectionGrid, allImages = []; SheetManager.sheets.forEach((sheet, idx) => { sheet.images.forEach(img => { if (!img.isMock && !img.isBlank) { allImages.push({ ...img, sheetId: idx }); } }); });
+        if (allImages.length === 0) { alert("No images available. Please add some images first."); return; }
+        grid.innerHTML = allImages.map(img => `<div class="selection-item cursor-pointer border border-line hover:border-ink transition p-1" data-url="${img.url}" data-target="${targetId}">${img.isVideo ? `<video src="${img.url}" class="w-full h-32 object-cover" muted></video>` : `<img src="${img.url}" class="w-full h-32 object-cover" loading="lazy">`}<div class="text-[9px] font-mono text-graphite mt-1 truncate">${img.name || 'Untitled'}</div></div>`).join('');
+        grid.querySelectorAll('.selection-item').forEach(item => { item.addEventListener('click', () => { const url = item.dataset.url, target = item.dataset.target; StateManager.replaceImageWithUrl(target, url); this.fullUpdate(); modal.classList.add('hidden'); }); }); modal.classList.remove('hidden');
+      }
+    };
+    document.addEventListener('DOMContentLoaded', () => { UIManager.initialize(); console.log('%c Grid Forge Pro v4.8 (AutoSave) ', 'background:#111;color:#fff;padding:4px 8px;'); });
+  </script>
+</body>
+</html>
