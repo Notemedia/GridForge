@@ -66,7 +66,7 @@ html.dark .status-error { background: #7f1d1d; color: #fca5a5; }
     <aside class="border-r border-line bg-paper flex flex-col h-full overflow-hidden z-20 shadow-[4px_0_12px_rgba(0,0,0,0.05)]">
       <div class="p-3 border-b border-line bg-paper shrink-0 space-y-3">
         <div class="flex items-center justify-between">
-            <div class="flex items-center space-x-2"><div class="w-7 h-7 bg-ink text-paper flex items-center justify-center font-bold text-[10px] rounded shadow-sm">GF</div><div class="flex flex-col"><span class="text-[9px] font-bold text-graphite font-mono tracking-widest">PRO</span><span class="text-[8px] text-gray-400">v4.9.4</span></div></div>
+            <div class="flex items-center space-x-2"><div class="w-7 h-7 bg-ink text-paper flex items-center justify-center font-bold text-[10px] rounded shadow-sm">GF</div><div class="flex flex-col"><span class="text-[9px] font-bold text-graphite font-mono tracking-widest">PRO</span><span class="text-[8px] text-gray-400">v4.9.5</span></div></div>
             <div class="flex items-center space-x-1">
                 <button id="themeToggleBtn" class="w-6 h-6 flex items-center justify-center hover:bg-highlight rounded-full transition text-[10px]" title="Toggle Dark Mode">◑</button>
                 <div class="w-px h-3 bg-line mx-1"></div>
@@ -550,6 +550,22 @@ html.dark .status-error { background: #7f1d1d; color: #fca5a5; }
             } 
         },
         async blobToBase64(blob) { return new Promise((resolve, reject) => { const reader = new FileReader(); reader.onloadend = () => resolve(reader.result); reader.onerror = reject; reader.readAsDataURL(blob); }); },
+        // --- Helper: Robust Base64 to Blob conversion (No fetch required) ---
+        base64ToBlob(dataURI) {
+            try {
+                var byteString = atob(dataURI.split(',')[1]);
+                var mimeString = dataURI.split(',')[0].split(':')[1].split(';')[0];
+                var ab = new ArrayBuffer(byteString.length);
+                var ia = new Uint8Array(ab);
+                for (var i = 0; i < byteString.length; i++) {
+                    ia[i] = byteString.charCodeAt(i);
+                }
+                return new Blob([ab], {type: mimeString});
+            } catch (e) {
+                console.warn("Base64 conversion failed", e);
+                return null;
+            }
+        },
         // --- Enhanced Data Preparation (Supports both Export & AutoSave) ---
         async prepareData(forFileExport = false) {
              SheetManager.saveCurrentState();
@@ -568,7 +584,7 @@ html.dark .status-error { background: #7f1d1d; color: #fca5a5; }
                 const chunkSize = 4;
                 for (let i = 0; i < sheet.images.length; i += chunkSize) { const chunk = sheet.images.slice(i, i + chunkSize); await Promise.all(chunk.map(processImage)); if (!forFileExport) await new Promise(r => setTimeout(r, 0)); }
              }
-             return { version: "4.9.1", date: new Date().toISOString(), sheets: sheetsExport, globalSettings: { cols: $('colsInput').value, rows: $('rowsInput').value, gap: $('gapSlider').value, margin: $('marginSlider').value, paper: $('paperSizeSelect').value, orient: $('paperOrientationSelect').value, fontSize: $('fontSizeInput').value, lineHeight: $('lineHeightInput').value, algo: $('algoInput').value, meta: { tl: $('metaTL').value, tr: $('metaTR').value, bl: $('metaBL').value, br: $('metaBR').value } } };
+             return { version: "4.9.5", date: new Date().toISOString(), sheets: sheetsExport, globalSettings: { cols: $('colsInput').value, rows: $('rowsInput').value, gap: $('gapSlider').value, margin: $('marginSlider').value, paper: $('paperSizeSelect').value, orient: $('paperOrientationSelect').value, fontSize: $('fontSizeInput').value, lineHeight: $('lineHeightInput').value, algo: $('algoInput').value, meta: { tl: $('metaTL').value, tr: $('metaTR').value, bl: $('metaBL').value, br: $('metaBR').value } } };
         },
         async prepareForAutoSave() { return await this.prepareData(false); },
         async save() { ExportManager.showLoading('SAVING PROJECT FILE...'); setTimeout(async () => { try { const projectData = await this.prepareData(true); const jsonString = JSON.stringify(projectData); const blob = new Blob([jsonString], { type: 'application/json' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `GridForge_Project_${Date.now()}.gforge`; a.click(); URL.revokeObjectURL(url); AutoSaveManager.isDirty = false; AutoSaveManager.updateUI('saved'); } catch (e) { alert("Save failed: " + e.message); } finally { ExportManager.hideLoading(); } }, 100); },
@@ -586,7 +602,22 @@ html.dark .status-error { background: #7f1d1d; color: #fca5a5; }
                         for (let img of savedSheet.images) {
                             let restoredUrl = StateManager.sharedMockUrl, isMock = img.isMock, text = img.text, embeddedData = img.embeddedData, blobData = img.blobData;
                             if (!isMock) {
-                                if (blobData) { restoredUrl = BlobManager.create(blobData); } else if (embeddedData) { try { const res = await fetch(embeddedData); const blob = await res.blob(); restoredUrl = BlobManager.create(blob); blobData = blob; } catch (err) { restoredUrl = StateManager.createPlaceholder("DATA ERROR"); isMock = true; } } else { restoredUrl = StateManager.createPlaceholder("MISSING"); isMock = true; }
+                                if (blobData) { 
+                                    restoredUrl = BlobManager.create(blobData); 
+                                } else if (embeddedData) { 
+                                    // Use Robust conversion instead of fetch
+                                    const blob = this.base64ToBlob(embeddedData);
+                                    if (blob) {
+                                        restoredUrl = BlobManager.create(blob);
+                                        blobData = blob;
+                                    } else {
+                                        restoredUrl = StateManager.createPlaceholder("DATA ERROR");
+                                        isMock = true;
+                                    }
+                                } else { 
+                                    restoredUrl = StateManager.createPlaceholder("MISSING"); 
+                                    isMock = true; 
+                                }
                             }
                             restoredImages.push({ ...img, id: generateId(), url: restoredUrl, originalUrl: restoredUrl, isMock: isMock, text: text, embeddedData: null, blobData: blobData, version: 0 });
                         }
@@ -948,7 +979,7 @@ html.dark .status-error { background: #7f1d1d; color: #fca5a5; }
         grid.querySelectorAll('.selection-item').forEach(item => { item.addEventListener('click', () => { const url = item.dataset.url, target = item.dataset.target; StateManager.replaceImageWithUrl(target, url); this.fullUpdate(); modal.classList.add('hidden'); }); }); modal.classList.remove('hidden');
       }
     };
-    document.addEventListener('DOMContentLoaded', () => { UIManager.initialize(); console.log('%c Grid Forge Pro v4.8 (AutoSave) ', 'background:#111;color:#fff;padding:4px 8px;'); });
+    document.addEventListener('DOMContentLoaded', () => { UIManager.initialize(); console.log('%c Grid Forge Pro v4.9.5 (GitHub Safe) ', 'background:#111;color:#fff;padding:4px 8px;'); });
   </script>
 </body>
 </html>
